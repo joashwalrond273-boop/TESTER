@@ -309,11 +309,10 @@ end)
 
 local Tabs = {
 	Main = Window:AddTab("Main", "info"),
-	Player = Window:AddTab("Player", "eye"),
+	Player = Window:AddTab("Player", "torch"),
 	Combat = Window:AddTab("Combat", "sword"),
 	Movement = Window:AddTab("Movement", "move"),
 	Farming = Window:AddTab("Farming", "pickaxe"),
-	BossFarm = Window:AddTab("BossFarm", "sword"),
 	Teleport = Window:AddTab("Teleport", "map-pin"),
 	Visuals = Window:AddTab("Visuals", "eye"),
 	["Fun Box"] = Window:AddTab("Fun Box", "gamepad"),
@@ -1129,7 +1128,7 @@ end)
 -- COMBAT
 -- ==========================================
 local CombatLeft = Tabs.Combat:AddLeftGroupbox("Kill Aura", "swords")
-local CombatRight = Tabs.Combat:AddRightGroupbox("Targeting", "target")
+local CombatRight = Tabs.Combat:AddRightGroupbox("Targeting", "crosshair")
 
 CombatLeft:AddToggle("KillAura", {
 	Text = "Kill Aura",
@@ -1171,7 +1170,9 @@ CombatLeft:AddSlider("RangeAura", {
 	Rounding = 1,
 })
 
-CombatLeft:AddToggle("AutoSwing", {
+local CombatAutoSwing = Tabs.Combat:AddLeftGroupbox("Auto Swing", "eye")
+
+CombatAutoSwing:AddToggle("AutoSwing", {
 	Text = "Auto Swing",
 	Default = false,
 })
@@ -2719,41 +2720,6 @@ Toggles.AiAura:OnChanged(function()
 		updateHighlight(hlAI, nil, false)
 	end
 end)
-
--- Adamantite Farm Toggle Logic
-Toggles.AdamantiteFarm:OnChanged(function()
-	disconnect("AdamantiteFarm")
-	if Toggles.AdamantiteFarm.Value then
-		Library:Notify({ Title = "Adamantite Farm", Description = "Enabled", Time = 2 })
-	else
-		Library:Notify({ Title = "Adamantite Farm", Description = "Disabled", Time = 2 })
-	end
-end)
-
--- Auto Ore Farm Toggle Logic
-Toggles.AutoOreFarm:OnChanged(function()
-	disconnect("AutoOreFarm")
-	if Toggles.AutoOreFarm.Value then
-		Library:Notify({ Title = "Auto Ore Farm", Description = "Enabled", Time = 2 })
-	else
-		Library:Notify({ Title = "Auto Ore Farm", Description = "Disabled", Time = 2 })
-	end
-end)
-
--- ==========================================
--- BOSSFARM
--- ==========================================
-local BossFarmLeft = Tabs.BossFarm:AddLeftGroupbox("Boss Farm", "sword")
-BossFarmLeft:AddToggle("AdamantiteFarm", {
-	Text = "Adamantite Farm",
-	Default = false,
-})
-
-local BossFarmRight = Tabs.BossFarm:AddRightGroupbox("Ore Farm", "pickaxe")
-BossFarmRight:AddToggle("AutoOreFarm", {
-	Text = "Auto Ore Farm",
-	Default = false,
-})
 
 -- ==========================================
 -- TELEPORT
@@ -4329,9 +4295,6 @@ Library:OnUnload(function()
 	end
 	if Toggles.AdamantiteFarm and Toggles.AdamantiteFarm.Value then
 		Toggles.AdamantiteFarm:SetValue(false)
-	end
-	if Toggles.AutoOreFarm and Toggles.AutoOreFarm.Value then
-		Toggles.AutoOreFarm:SetValue(false)
 	end
 	if Toggles.UltraFPSBoost and Toggles.UltraFPSBoost.Value then
 		Toggles.UltraFPSBoost:SetValue(false)
