@@ -2454,7 +2454,12 @@ local goldLocations = {
 	{ name = "Gold 10", pos = Vector3.new(-2015.67, 30.73, -39.95)  },
 	{ name = "Gold 11", pos = Vector3.new(-912.17, 125.72, -408.72) },
 	{ name = "Gold 12", pos = Vector3.new(-264.65, 47.32,  1427.81) },
-	{ name = "Gold 13", pos = Vector3.new(245.51,  45.00,  460.77)  },
+    { name = "Gold 13", pos = Vector3.new(245.51,  45.00,  460.77)  },
+	{ name = "Gold 14", pos = Vector3.new(-1261.77, 43.72, 6281.94) },
+	{ name = "Gold 15", pos = Vector3.new(-1765.08, 95.91, 7158.15) },
+	{ name = "Gold 16", pos = Vector3.new(1686.60, 41.64, -917.39)  },
+	{ name = "Gold 17", pos = Vector3.new(1566.16, 23.19, -946.35)  },
+	{ name = "Gold 18", pos = Vector3.new(252.14, 22.06, 811.69)    },
 }
 
 local goldNames = {}
