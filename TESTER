@@ -305,6 +305,7 @@ local Tabs = {
 	Combat = Window:AddTab("Combat", "sword"),
 	Movement = Window:AddTab("Movement", "move"),
 	Farming = Window:AddTab("Farming", "pickaxe"),
+	OreFarm = Window:AddTab("Ore Farm", "gem"),
 	Teleport = Window:AddTab("Teleport", "map-pin"),
 	Visuals = Window:AddTab("Visuals", "eye"),
 	["Fun Box"] = Window:AddTab("Fun Box", "gamepad"),
@@ -1162,13 +1163,6 @@ CombatLeft:AddSlider("RangeAura", {
 	Rounding = 1,
 })
 
-local CombatAutoSwing = Tabs.Combat:AddLeftGroupbox("Auto Swing", "swords")
-
-CombatAutoSwing:AddToggle("AutoSwing", {
-	Text = "Auto Swing",
-	Default = false,
-})
-
 local CombatAutoSpin = Tabs.Combat:AddLeftGroupbox("Auto Spin", "refresh-cw")
 
 CombatAutoSpin:AddToggle("AutoSpin", {
@@ -1198,6 +1192,13 @@ CombatRight:AddToggle("TargetAnimals", {
 CombatRight:AddToggle("HighlightTarget", {
 	Text = "Highlight Target",
 	Default = true,
+})
+
+local CombatAutoSwing = Tabs.Combat:AddRightGroupbox("Auto Swing", "swords")
+
+CombatAutoSwing:AddToggle("AutoSwing", {
+	Text = "Auto Swing",
+	Default = false,
 })
 
 local CombatAimbot = Tabs.Combat:AddRightGroupbox("AIMBOT", "eye")
@@ -2467,6 +2468,11 @@ FarmDupe:AddToggle("Multiplier", {
 	Text = "Multiplier",
 	Default = false,
 })
+
+-- ==========================================
+-- ORE FARM
+-- ==========================================
+local OreFarmLeft = Tabs.OreFarm:AddLeftGroupbox("Gold Farm Assist", "coins")
 
 -- ==========================================
 -- In Obsidian, AddColorPicker is chained off a Label or Toggle
