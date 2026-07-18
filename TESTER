@@ -2441,6 +2441,71 @@ FarmAI:AddToggle("HighlightAI", {
 -- ==========================================
 local OreFarm = Tabs.Farming:AddRightGroupbox("Ore Farm", "gem")
 
+local goldLocations = {
+	{ name = "Gold 1",  pos = Vector3.new(1732.94, 113.13, 2295.19) },
+	{ name = "Gold 2",  pos = Vector3.new(1447.98, 39.83,  2400.27) },
+	{ name = "Gold 3",  pos = Vector3.new(1837.06, 29.36,  2471.74) },
+	{ name = "Gold 4",  pos = Vector3.new(1177.61, 29.01,  -609.47) },
+	{ name = "Gold 5",  pos = Vector3.new(1188.42, 20.58,  -563.03) },
+	{ name = "Gold 6",  pos = Vector3.new(-651.84, 226.09, 654.28)  },
+	{ name = "Gold 7",  pos = Vector3.new(-540.20, 76.40,  297.97)  },
+	{ name = "Gold 8",  pos = Vector3.new(-639.61, -24.83, -83.22)  },
+	{ name = "Gold 9",  pos = Vector3.new(-1182.86, 54.42, 6608.34) },
+	{ name = "Gold 10", pos = Vector3.new(-2015.67, 30.73, -39.95)  },
+	{ name = "Gold 11", pos = Vector3.new(-912.17, 125.72, -408.72) },
+	{ name = "Gold 12", pos = Vector3.new(-264.65, 47.32,  1427.81) },
+	{ name = "Gold 13", pos = Vector3.new(245.51,  45.00,  460.77)  },
+}
+
+local goldNames = {}
+for i, loc in ipairs(goldLocations) do
+	table.insert(goldNames, loc.name)
+end
+
+OreFarm:AddDropdown("GoldLocationsDropdown", {
+	Text = "Select Gold Location",
+	Values = goldNames,
+	Default = "Gold 1",
+})
+
+OreFarm:AddButton({
+	Text = "Teleport to Selected Gold",
+	Func = function()
+		local selected = Options.GoldLocationsDropdown.Value
+		local targetPos = nil
+		for _, loc in ipairs(goldLocations) do
+			if loc.name == selected then
+				targetPos = loc.pos
+				break
+			end
+		end
+		if targetPos then
+			local root = getRootPart()
+			if root then
+				root.CFrame = CFrame.new(targetPos)
+				Library:Notify({ Title = "Teleport", Description = "Teleported to " .. selected, Time = 1.5 })
+			else
+				Library:Notify({ Title = "Teleport", Description = "Character not found.", Time = 3 })
+			end
+		end
+	end,
+})
+
+for _, loc in ipairs(goldLocations) do
+	OreFarm:AddButton({
+		Text = loc.name,
+		Func = function()
+			local root = getRootPart()
+			if root then
+				root.CFrame = CFrame.new(loc.pos)
+				Library:Notify({ Title = "Teleport", Description = "Teleported to " .. loc.name, Time = 1.5 })
+			else
+				Library:Notify({ Title = "Teleport", Description = "Character not found.", Time = 3 })
+			end
+		end,
+	})
+end
+
 local FarmDupe = Tabs.Farming:AddRightGroupbox("DUPE ITEMS", "copy")
 
 FarmDupe:AddToggle("Multiplier", {
