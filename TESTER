@@ -472,6 +472,70 @@ MainRight:AddButton({
 	end,
 })
 
+local LowPingServerToggle = MainRight:AddToggle("LowPingServer", {
+	Text = "LowPing Server",
+	Default = false,
+})
+
+LowPingServerToggle:OnChanged(function()
+	if Toggles.LowPingServer.Value then
+		task.spawn(function()
+			local HttpService = game:GetService("HttpService")
+			local TeleportService = game:GetService("TeleportService")
+			local PlaceId = game.PlaceId
+			local JobId = game.JobId
+
+			local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?limit=100"
+			local success, result = pcall(function()
+				return game:HttpGet(url)
+			end)
+
+			if not success or not result then
+				Library:Notify({ Title = "LowPing Server", Description = "Failed to fetch server list.", Time = 3 })
+				Toggles.LowPingServer:SetValue(false)
+				return
+			end
+
+			local dataSuccess, decoded = pcall(function()
+				return HttpService:JSONDecode(result)
+			end)
+
+			if not dataSuccess or not decoded or not decoded.data then
+				Library:Notify({ Title = "LowPing Server", Description = "Failed to parse server list.", Time = 3 })
+				Toggles.LowPingServer:SetValue(false)
+				return
+			end
+
+			local servers = {}
+			for _, server in ipairs(decoded.data) do
+				if typeof(server) == "table" and server.id and server.id ~= JobId and server.playing and server.maxPlayers then
+					if server.playing < server.maxPlayers and server.playing > 0 then
+						table.insert(servers, server)
+					end
+				end
+			end
+
+			if #servers == 0 then
+				Library:Notify({ Title = "LowPing Server", Description = "No alternative servers found.", Time = 3 })
+				Toggles.LowPingServer:SetValue(false)
+				return
+			end
+
+			table.sort(servers, function(a, b)
+				return a.playing < b.playing
+			end)
+
+			local bestServer = servers[1]
+			Library:Notify({ Title = "LowPing Server", Description = "Teleporting to smallest server (" .. tostring(bestServer.playing) .. "/" .. tostring(bestServer.maxPlayers) .. " players)...", Time = 3 })
+
+			task.wait(0.5)
+			pcall(function()
+				TeleportService:TeleportToPlaceInstance(PlaceId, bestServer.id, LocalPlayer)
+			end)
+		end)
+	end
+end)
+
 MainRight:AddButton({
 	Text = "Rejoin Server",
 	Func = function()
@@ -4251,6 +4315,9 @@ ThemeManager:ApplyToTab(Tabs["UI Settings"])
 SaveManager:LoadAutoloadConfig()
 
 Library:OnUnload(function()
+	if Toggles.LowPingServer and Toggles.LowPingServer.Value then
+		Toggles.LowPingServer:SetValue(false)
+	end
 	if Toggles.DesyncToggle and Toggles.DesyncToggle.Value then
 		Toggles.DesyncToggle:SetValue(false)
 	end
