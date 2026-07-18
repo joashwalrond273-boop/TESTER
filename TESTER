@@ -1299,6 +1299,11 @@ local DodgeAttackToggle = CombatAutoBlock:AddToggle("DodgeAttack", {
 	Default = false,
 })
 
+local AutoParryToggle = CombatAutoBlock:AddToggle("AutoParry", {
+	Text = "Auto Parry",
+	Default = false,
+})
+
 local isShielding = false
 local lastShieldFire = 0
 local function updateAutoShield()
@@ -1452,6 +1457,66 @@ Toggles.DodgeAttack:OnChanged(function()
 	disconnect("DodgeAttack")
 	if Toggles.DodgeAttack.Value then
 		track("DodgeAttack", RunService.Heartbeat:Connect(checkDodge))
+	end
+end)
+
+local isParrying = false
+local function checkParry()
+	if not isAlive() or not Toggles.AutoParry.Value or isParrying then return end
+	local root = getRootPart()
+	if not root then return end
+	
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart")
+			local enemyHum = player.Character:FindFirstChildOfClass("Humanoid")
+			if enemyRoot and enemyHum and enemyHum.Health > 0 then
+				local dist = (enemyRoot.Position - root.Position).Magnitude
+				if dist <= 15 then
+					local animator = enemyHum:FindFirstChild("Animator")
+					if animator then
+						for _, trackObj in ipairs(animator:GetPlayingAnimationTracks()) do
+							if trackObj.TimePosition < 0.15 and trackObj.Speed > 0 then
+								if isSwingAnimation(trackObj) then
+									isParrying = true
+									task.spawn(function()
+										-- Block incoming attack
+										pcall(function()
+											game:GetService("ReplicatedStorage").remoteInterface.character.setShield:FireServer(true)
+										end)
+										
+										-- Wait for block to register/attack to hit shield
+										task.wait(0.2)
+										
+										-- Unblock
+										pcall(function()
+											game:GetService("ReplicatedStorage").remoteInterface.character.setShield:FireServer(false)
+										end)
+										
+										-- Counter-swing
+										local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+										if tool then
+											tool:Activate()
+										end
+										
+										task.wait(0.1)
+										isParrying = false
+									end)
+									break
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+Toggles.AutoParry:OnChanged(function()
+	disconnect("AutoParry")
+	if Toggles.AutoParry.Value then
+		track("AutoParry", RunService.Heartbeat:Connect(checkParry))
 	end
 end)
 
@@ -4309,6 +4374,9 @@ SaveManager:LoadAutoloadConfig()
 
 Library:OnUnload(function()
 
+	if Toggles.AutoParry and Toggles.AutoParry.Value then
+		Toggles.AutoParry:SetValue(false)
+	end
 	if Toggles.DesyncToggle and Toggles.DesyncToggle.Value then
 		Toggles.DesyncToggle:SetValue(false)
 	end
