@@ -2491,21 +2491,6 @@ OreFarm:AddButton({
 	end,
 })
 
-for _, loc in ipairs(goldLocations) do
-	OreFarm:AddButton({
-		Text = loc.name,
-		Func = function()
-			local root = getRootPart()
-			if root then
-				root.CFrame = CFrame.new(loc.pos)
-				Library:Notify({ Title = "Teleport", Description = "Teleported to " .. loc.name, Time = 1.5 })
-			else
-				Library:Notify({ Title = "Teleport", Description = "Character not found.", Time = 3 })
-			end
-		end,
-	})
-end
-
 local FarmDupe = Tabs.Farming:AddRightGroupbox("DUPE ITEMS", "copy")
 
 FarmDupe:AddToggle("Multiplier", {
