@@ -305,7 +305,6 @@ local Tabs = {
 	Combat = Window:AddTab("Combat", "sword"),
 	Movement = Window:AddTab("Movement", "move"),
 	Farming = Window:AddTab("Farming", "pickaxe"),
-	OreFarm = Window:AddTab("Ore Farm", "pickaxe"),
 	Teleport = Window:AddTab("Teleport", "map-pin"),
 	Visuals = Window:AddTab("Visuals", "eye"),
 	["Fun Box"] = Window:AddTab("Fun Box", "gamepad"),
@@ -2440,25 +2439,7 @@ FarmAI:AddToggle("HighlightAI", {
 })
 
 -- ==========================================
-local FarmPlant = Tabs.Farming:AddRightGroupbox("Auto Plant", "sprout")
-
-local AutoPlantToggle = FarmPlant:AddToggle("AutoPlant", {
-	Text = "Auto Plant",
-	Default = false,
-})
-
-local PlantRawCropsToggle = FarmPlant:AddToggle("PlantRawCrops", {
-	Text = "Plant Raw Crops",
-	Default = false,
-})
-
-local PlantThresholdSlider = FarmPlant:AddSlider("PlantThreshold", {
-	Text = "Plant Threshold",
-	Default = 50,
-	Min = 0,
-	Max = 100,
-	Rounding = 0,
-})
+local OreFarm = Tabs.Farming:AddRightGroupbox("Ore Farm", "gem")
 
 local FarmDupe = Tabs.Farming:AddRightGroupbox("DUPE ITEMS", "copy")
 
@@ -2466,11 +2447,6 @@ FarmDupe:AddToggle("Multiplier", {
 	Text = "Multiplier",
 	Default = false,
 })
-
--- ==========================================
--- ORE FARM
--- ==========================================
-local OreFarmLeft = Tabs.OreFarm:AddLeftGroupbox("Gold Farm Assist", "pickaxe")
 
 -- ==========================================
 -- In Obsidian, AddColorPicker is chained off a Label or Toggle
@@ -2490,9 +2466,7 @@ FarmRight:AddLabel("Outline Color"):AddColorPicker("AuraOutlineColor", {
 	end,
 })
 
-Toggles.AutoPlant:OnChanged(function()
-	-- Auto Plant placeholder
-end)
+
 
 -- Aura highlights (one per aura type, created after makeAuraHighlight is defined)
 local hlMine = makeAuraHighlight()
