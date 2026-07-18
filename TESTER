@@ -1163,6 +1163,7 @@ CombatLeft:AddSlider("RangeAura", {
 })
 
 local CombatAutoSwing = Tabs.Combat:AddLeftGroupbox("Auto Swing", "swords")
+
 CombatAutoSwing:AddToggle("AutoSwing", {
 	Text = "Auto Swing",
 	Default = false,
