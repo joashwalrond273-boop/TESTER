@@ -2720,11 +2720,40 @@ Toggles.AiAura:OnChanged(function()
 	end
 end)
 
+-- Adamantite Farm Toggle Logic
+Toggles.AdamantiteFarm:OnChanged(function()
+	disconnect("AdamantiteFarm")
+	if Toggles.AdamantiteFarm.Value then
+		Library:Notify({ Title = "Adamantite Farm", Description = "Enabled", Time = 2 })
+	else
+		Library:Notify({ Title = "Adamantite Farm", Description = "Disabled", Time = 2 })
+	end
+end)
+
+-- Auto Ore Farm Toggle Logic
+Toggles.AutoOreFarm:OnChanged(function()
+	disconnect("AutoOreFarm")
+	if Toggles.AutoOreFarm.Value then
+		Library:Notify({ Title = "Auto Ore Farm", Description = "Enabled", Time = 2 })
+	else
+		Library:Notify({ Title = "Auto Ore Farm", Description = "Disabled", Time = 2 })
+	end
+end)
+
 -- ==========================================
 -- BOSSFARM
 -- ==========================================
 local BossFarmLeft = Tabs.BossFarm:AddLeftGroupbox("Boss Farm", "sword")
+BossFarmLeft:AddToggle("AdamantiteFarm", {
+	Text = "Adamantite Farm",
+	Default = false,
+})
+
 local BossFarmRight = Tabs.BossFarm:AddRightGroupbox("Ore Farm", "pickaxe")
+BossFarmRight:AddToggle("AutoOreFarm", {
+	Text = "Auto Ore Farm",
+	Default = false,
+})
 
 -- ==========================================
 -- TELEPORT
@@ -4300,6 +4329,9 @@ Library:OnUnload(function()
 	end
 	if Toggles.AdamantiteFarm and Toggles.AdamantiteFarm.Value then
 		Toggles.AdamantiteFarm:SetValue(false)
+	end
+	if Toggles.AutoOreFarm and Toggles.AutoOreFarm.Value then
+		Toggles.AutoOreFarm:SetValue(false)
 	end
 	if Toggles.UltraFPSBoost and Toggles.UltraFPSBoost.Value then
 		Toggles.UltraFPSBoost:SetValue(false)
