@@ -472,13 +472,9 @@ MainRight:AddButton({
 	end,
 })
 
-local LowPingServerToggle = MainRight:AddToggle("LowPingServer", {
+MainRight:AddButton({
 	Text = "LowPing Server",
-	Default = false,
-})
-
-LowPingServerToggle:OnChanged(function()
-	if Toggles.LowPingServer.Value then
+	Func = function()
 		task.spawn(function()
 			local HttpService = game:GetService("HttpService")
 			local TeleportService = game:GetService("TeleportService")
@@ -492,7 +488,6 @@ LowPingServerToggle:OnChanged(function()
 
 			if not success or not result then
 				Library:Notify({ Title = "LowPing Server", Description = "Failed to fetch server list.", Time = 3 })
-				Toggles.LowPingServer:SetValue(false)
 				return
 			end
 
@@ -502,7 +497,6 @@ LowPingServerToggle:OnChanged(function()
 
 			if not dataSuccess or not decoded or not decoded.data then
 				Library:Notify({ Title = "LowPing Server", Description = "Failed to parse server list.", Time = 3 })
-				Toggles.LowPingServer:SetValue(false)
 				return
 			end
 
@@ -517,7 +511,6 @@ LowPingServerToggle:OnChanged(function()
 
 			if #servers == 0 then
 				Library:Notify({ Title = "LowPing Server", Description = "No alternative servers found.", Time = 3 })
-				Toggles.LowPingServer:SetValue(false)
 				return
 			end
 
@@ -533,8 +526,8 @@ LowPingServerToggle:OnChanged(function()
 				TeleportService:TeleportToPlaceInstance(PlaceId, bestServer.id, LocalPlayer)
 			end)
 		end)
-	end
-end)
+	end,
+})
 
 MainRight:AddButton({
 	Text = "Rejoin Server",
@@ -4315,9 +4308,7 @@ ThemeManager:ApplyToTab(Tabs["UI Settings"])
 SaveManager:LoadAutoloadConfig()
 
 Library:OnUnload(function()
-	if Toggles.LowPingServer and Toggles.LowPingServer.Value then
-		Toggles.LowPingServer:SetValue(false)
-	end
+
 	if Toggles.DesyncToggle and Toggles.DesyncToggle.Value then
 		Toggles.DesyncToggle:SetValue(false)
 	end
