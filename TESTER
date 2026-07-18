@@ -2,7 +2,7 @@
 -- Docs: https://docs.mspaint.cc/obsidian
 
 if getgenv().TSG_OBSIDIAN_LOADED then
-	return warn("[TSG] Script already loaded Ã¢â‚¬â€ rejoin to re-execute.")
+	return warn("[TSG] Script already loaded ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â rejoin to re-execute.")
 end
 getgenv().TSG_OBSIDIAN_LOADED = true
 
@@ -1162,7 +1162,8 @@ CombatLeft:AddSlider("RangeAura", {
 	Rounding = 1,
 })
 
-CombatLeft:AddToggle("AutoSwing", {
+local CombatAutoSwing = Tabs.Combat:AddLeftGroupbox("Auto Swing", "swords")
+CombatAutoSwing:AddToggle("AutoSwing", {
 	Text = "Auto Swing",
 	Default = false,
 })
@@ -2961,7 +2962,7 @@ local waypoints = {}
 local function updateWaypointDropdown()
 	local list = {}
 	for name in pairs(waypoints) do
-		table.insert(list, "ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Âµ " .. name)
+		table.insert(list, "ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Âµ " .. name)
 	end
 	table.sort(list)
 	Options.WaypointList:SetValues(list)
