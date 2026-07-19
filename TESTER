@@ -329,12 +329,6 @@ end
 -- MAIN
 -- ==========================================
 local MainLeft = Tabs.Player:AddLeftGroupbox("Player", "user")
-local PlayerModsGroup = Tabs.Player:AddRightGroupbox("Player Mods", "user-x")
-
-PlayerModsGroup:AddToggle("Headless", {
-	Text = "Headless",
-	Default = false,
-})
 
 local MainRight = Tabs.Player:AddRightGroupbox("Misc", "sparkles")
 
@@ -558,6 +552,13 @@ local DesyncToggle = MainRight:AddToggle("DesyncToggle", {
 if DesyncToggle.TextLabel then
 	DesyncToggle.TextLabel.TextColor3 = Color3.fromRGB(0, 120, 215)
 end
+
+local PlayerModsGroup = Tabs.Player:AddRightGroupbox("Player Mods", "user-x")
+
+PlayerModsGroup:AddToggle("Headless", {
+	Text = "Headless",
+	Default = false,
+})
 
 local desyncConnections = {}
 local desyncAnimTracks = {}
