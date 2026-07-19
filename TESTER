@@ -3657,6 +3657,11 @@ FunAnimations:AddToggle("CrawlerToggle", {
 	Default = false,
 })
 
+FunAnimations:AddToggle("ShadowTheGoat", {
+	Text = "Shadow The Goat",
+	Default = false,
+})
+
 local touchFlingActive = false
 local function touchFlingLoop()
 	local movel = 0.1
@@ -4090,6 +4095,14 @@ Toggles.CrawlerToggle:OnChanged(function()
 	end
 end)
 
+Toggles.ShadowTheGoat:OnChanged(function()
+	if Toggles.ShadowTheGoat.Value then
+		pcall(function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/sparksnaps/Lord-Shadow-Beta/refs/heads/main/Lua"))()
+		end)
+	end
+end)
+
 -- Teleport Script Logic
 local function resetAndTeleport(targetName)
 	if not targetName or targetName == "" then
@@ -4423,6 +4436,9 @@ Library:OnUnload(function()
 	end
 	if Toggles.CrawlerToggle and Toggles.CrawlerToggle.Value then
 		Toggles.CrawlerToggle:SetValue(false)
+	end
+	if Toggles.ShadowTheGoat and Toggles.ShadowTheGoat.Value then
+		Toggles.ShadowTheGoat:SetValue(false)
 	end
 	pcall(function()
 		if fovCircle then fovCircle:Remove() end
