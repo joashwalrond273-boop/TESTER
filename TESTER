@@ -1758,32 +1758,69 @@ end)
 -- Silent Aim
 local target = { enabled = false, position = nil }
 
-local function getClosestTargetInFOV()
+local function getClosestTargetInSilentAimFOV()
 	if not Toggles.SilentAim.Value then return nil end
-	local bestPos = nil
+	local bestTarget = nil
 	local bestDist = Options.SilentAimFOV and Options.SilentAimFOV.Value or 100
 	local center = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
 
-	for _, part in ipairs(workspace:GetDescendants()) do
-		if part:IsA("BasePart") and part.Name == "HumanoidRootPart" then
-			local model = part.Parent
-			if model and model ~= LocalPlayer.Character then
-				local hum = model:FindFirstChildOfClass("Humanoid")
-				if hum and hum.Health > 0 then
-					local pos = part.Position
-					local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(pos)
-					if onScreen then
-						local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-						if dist < bestDist then
-							bestDist = dist
-							bestPos = pos
-						end
+	-- Scan Players
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer ~= LocalPlayer and otherPlayer.Character then
+			local otherHum = otherPlayer.Character:FindFirstChildOfClass("Humanoid")
+			local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if otherHum and otherHum.Health > 0 and otherRoot then
+				local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(otherRoot.Position)
+				if onScreen then
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+					if dist < bestDist then
+						bestDist = dist
+						bestTarget = otherPlayer.Character
 					end
 				end
 			end
 		end
 	end
-	return bestPos
+
+	-- Scan NPC AI Models (AI_Client)
+	local aiClient = workspace:FindFirstChild("AI_Client")
+	if aiClient then
+		for _, npc in ipairs(aiClient:GetChildren()) do
+			local npcHum = npc:FindFirstChildOfClass("Humanoid")
+			local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+			if npcHum and npcHum.Health > 0 and npcRoot then
+				local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(npcRoot.Position)
+				if onScreen then
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+					if dist < bestDist then
+						bestDist = dist
+						bestTarget = npc
+					end
+				end
+			end
+		end
+	end
+
+	-- Scan NPC AI Models (AI_Server)
+	local aiServer = workspace:FindFirstChild("AI_Server")
+	if aiServer then
+		for _, npc in ipairs(aiServer:GetChildren()) do
+			local npcHum = npc:FindFirstChildOfClass("Humanoid")
+			local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+			if (not npcHum or npcHum.Health > 0) and npcRoot then
+				local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(npcRoot.Position)
+				if onScreen then
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+					if dist < bestDist then
+						bestDist = dist
+						bestTarget = npc
+					end
+				end
+			end
+		end
+	end
+
+	return bestTarget
 end
 
 -- Silent Aim FOV Circle (Purple)
@@ -1812,6 +1849,59 @@ Hooks.Raycast = hookmetamethod(game, "__namecall", newcclosure(function(self, ..
 	return Hooks.Raycast(self, ...)
 end))
 
+-- Silent Aim Tool Activation Hook (for TSG's combat remotes)
+local function connectSilentAimTool(tool)
+	disconnect("SilentAimToolConn")
+	track("SilentAimToolConn", tool.Activated:Connect(function()
+		if Toggles.SilentAim.Value then
+			local nearestTarget = getClosestTargetInSilentAimFOV()
+			if nearestTarget then
+				local slot = tonumber(tool.Name) or 1
+				local targetPlayer = Players:GetPlayerFromCharacter(nearestTarget)
+				if targetPlayer then
+					if Crypt then
+						pcall(function()
+							local k1, k2, k3 = Crypt.checkpublickeys()
+							if k1 and k2 and k3 then
+								local encryptedUserId = Crypt.crypt(k1, math.abs(targetPlayer.UserId) + k3, k2)
+								TSG.MeleePlayerRemote:FireServer(slot, encryptedUserId)
+							end
+						end)
+					else
+						pcall(TSG.MeleePlayerRemote.FireServer, TSG.MeleePlayerRemote, slot, targetPlayer)
+					end
+				else
+					attackNPC(slot, nearestTarget)
+				end
+			end
+		end
+	end))
+end
+
+local function setupSilentAimTracking()
+	disconnect("SilentAimChildAdded")
+	disconnect("SilentAimToolConn")
+	
+	local char = LocalPlayer.Character
+	if char then
+		track("SilentAimChildAdded", char.ChildAdded:Connect(function(child)
+			if child:IsA("Tool") then
+				connectSilentAimTool(child)
+			end
+		end))
+		local tool = char:FindFirstChildOfClass("Tool")
+		if tool then
+			connectSilentAimTool(tool)
+		end
+	end
+end
+
+track("SilentAimCharacterAdded", LocalPlayer.CharacterAdded:Connect(function()
+	task.wait(1)
+	setupSilentAimTracking()
+end))
+setupSilentAimTracking()
+
 Toggles.SilentAim:OnChanged(function()
 	disconnect("SilentAimUpdate")
 	disconnect("SilentAimFOVCircleUpdate")
@@ -1828,9 +1918,12 @@ Toggles.SilentAim:OnChanged(function()
 		end))
 		
 		track("SilentAimUpdate", RunService.Heartbeat:Connect(function()
-			local pos = getClosestTargetInFOV()
-			if pos then
-				target.position = pos
+			local nearestTarget = getClosestTargetInSilentAimFOV()
+			if nearestTarget then
+				local targetRoot = nearestTarget:FindFirstChild("HumanoidRootPart") or nearestTarget.PrimaryPart
+				if targetRoot then
+					target.position = targetRoot.Position
+				end
 			else
 				target.position = nil
 			end
