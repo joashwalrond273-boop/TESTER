@@ -329,13 +329,6 @@ end
 -- MAIN
 -- ==========================================
 local MainLeft = Tabs.Player:AddLeftGroupbox("Player", "user")
-local PlayerModsGroup = Tabs.Player:AddRightGroupbox("Player Mods", "user-x")
-
-PlayerModsGroup:AddToggle("Headless", {
-	Text = "Headless",
-	Default = false,
-})
-
 local MainRight = Tabs.Player:AddRightGroupbox("Misc", "sparkles")
 
 -- ============================================================================
@@ -906,51 +899,6 @@ local function applyCharacterModuleToggles()
 		end
 	end
 end
-
-local function applyHeadless(char)
-	if not char then return end
-	local head = char:WaitForChild("Head", 10)
-	if head then
-		head.Transparency = 1
-		local face = head:FindFirstChild("face")
-		if face and face:IsA("Decal") then
-			face.Transparency = 1
-		end
-	end
-end
-
-local function removeHeadless(char)
-	if not char then return end
-	local head = char:FindFirstChild("Head")
-	if head then
-		head.Transparency = 0
-		local face = head:FindFirstChild("face")
-		if face and face:IsA("Decal") then
-			face.Transparency = 0
-		end
-	end
-end
-
-local headlessConnection = nil
-Toggles.Headless:OnChanged(function()
-	if headlessConnection then
-		headlessConnection:Disconnect()
-		headlessConnection = nil
-	end
-	
-	if Toggles.Headless.Value then
-		headlessConnection = LocalPlayer.CharacterAdded:Connect(applyHeadless)
-		if LocalPlayer.Character then
-			applyHeadless(LocalPlayer.Character)
-		end
-		Library:Notify({ Title = "Headless", Description = "Headless mode enabled!", Time = 2 })
-	else
-		if LocalPlayer.Character then
-			removeHeadless(LocalPlayer.Character)
-		end
-		Library:Notify({ Title = "Headless", Description = "Headless mode disabled.", Time = 2 })
-	end
-end)
 
 Toggles.InfiniteBackpack:OnChanged(function()
 	disconnect("InfiniteBackpack")
@@ -4488,9 +4436,6 @@ Library:OnUnload(function()
 	end
 	if Toggles.CrawlerToggle and Toggles.CrawlerToggle.Value then
 		Toggles.CrawlerToggle:SetValue(false)
-	end
-	if Toggles.Headless and Toggles.Headless.Value then
-		Toggles.Headless:SetValue(false)
 	end
 	if Toggles.ShadowTheGoat and Toggles.ShadowTheGoat.Value then
 		Toggles.ShadowTheGoat:SetValue(false)
