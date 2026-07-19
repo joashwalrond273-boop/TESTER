@@ -1234,125 +1234,10 @@ CombatSilentAim:AddToggle("SilentAim", {
 CombatSilentAim:AddSlider("SilentAimFOV", {
 	Text = "FOV",
 	Default = 100,
-	Min = 10,
-	Max = 600,
+	Min = 30,
+	Max = 300,
 	Rounding = 0,
 })
-
--- Silent Aim FOV Circle
-local silentAimFovCircle = nil
-pcall(function()
-	if typeof(Drawing) ~= "nil" then
-		silentAimFovCircle = Drawing.new("Circle")
-		silentAimFovCircle.Thickness = 1.5
-		silentAimFovCircle.Color = Color3.fromRGB(128, 0, 255) -- Purple
-		silentAimFovCircle.Filled = false
-		silentAimFovCircle.Transparency = 1
-		silentAimFovCircle.Visible = false
-	end
-end)
-
-local function getClosestPlayerInSilentAimFOV()
-	local closestPlayer = nil
-	local shortestDistance = math.huge
-	local camera = workspace.CurrentCamera
-	local viewportSize = camera.ViewportSize
-	local center = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
-	local fovRadius = Options.SilentAimFOV and Options.SilentAimFOV.Value or 100
-
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and player.Character then
-			local torso = player.Character:FindFirstChild("LowerTorso") or player.Character:FindFirstChild("UpperTorso") or player.Character:FindFirstChild("Torso") or player.Character:FindFirstChild("HumanoidRootPart")
-			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if torso and humanoid and humanoid.Health > 0 then
-				local screenPos, onScreen = camera:WorldToViewportPoint(torso.Position)
-				if onScreen then
-					local distance = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-					if distance < shortestDistance and distance <= fovRadius then
-						shortestDistance = distance
-						closestPlayer = player
-					end
-				end
-			end
-		end
-	end
-	return closestPlayer
-end
-
-local function silentAimAttack()
-	if not Toggles.SilentAim.Value or not isAlive() then return end
-	
-	local targetPlayer = getClosestPlayerInSilentAimFOV()
-	if not targetPlayer or not targetPlayer.Character then return end
-	
-	local slot = tonumber(Options.KillAuraSlot.Value) or 1
-	
-	if Crypt then
-		pcall(function()
-			local k1, k2, k3 = Crypt.checkpublickeys()
-			if k1 and k2 and k3 then
-				local encryptedUserId = Crypt.crypt(k1, math.abs(targetPlayer.UserId) + k3, k2)
-				TSG.MeleePlayerRemote:FireServer(slot, encryptedUserId)
-			end
-		end)
-	else
-		pcall(TSG.MeleePlayerRemote.FireServer, TSG.MeleePlayerRemote, slot, targetPlayer)
-	end
-end
-
--- Hook tool activation for Silent Aim
-local function hookTool(tool)
-	if not tool:IsA("Tool") then return end
-	local oldActivate = tool.Activated
-	tool.Activated:Connect(function()
-		silentAimAttack()
-	end)
-end
-
--- Hook existing and new tools
-LocalPlayer.Backpack.ChildAdded:Connect(function(child)
-	hookTool(child)
-end)
-if LocalPlayer.Character then
-	LocalPlayer.Character.ChildAdded:Connect(function(child)
-		if child:IsA("Tool") then
-			hookTool(child)
-		end
-	end)
-	for _, child in ipairs(LocalPlayer.Backpack:GetChildren()) do
-		hookTool(child)
-	end
-	for _, child in ipairs(LocalPlayer.Character:GetChildren()) do
-		hookTool(child)
-	end
-end
-
-LocalPlayer.CharacterAdded:Connect(function(character)
-	character.ChildAdded:Connect(function(child)
-		if child:IsA("Tool") then
-			hookTool(child)
-		end
-	end)
-end)
-
-Toggles.SilentAim:OnChanged(function()
-	disconnect("SilentAimFOVCircleUpdate")
-	if silentAimFovCircle then silentAimFovCircle.Visible = false end
-	
-	if Toggles.SilentAim.Value then
-		track("SilentAimFOVCircleUpdate", RunService.RenderStepped:Connect(function()
-			if silentAimFovCircle then
-				local viewportSize = workspace.CurrentCamera.ViewportSize
-				silentAimFovCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
-				silentAimFovCircle.Radius = Options.SilentAimFOV and Options.SilentAimFOV.Value or 100
-				silentAimFovCircle.Visible = true
-			end
-		end))
-		Library:Notify({ Title = "Silent Aim", Description = "Silent Aim Enabled (Purple FOV)", Time = 2 })
-	end
-end)
-
-
 
 
 CombatRight:AddToggle("TargetPlayers", {
@@ -1870,7 +1755,90 @@ Toggles.AutoSwing:OnChanged(function()
 	end
 end)
 
+-- Silent Aim
+local target = { enabled = false, position = nil }
 
+local function getClosestTargetInFOV()
+	if not Toggles.SilentAim.Value then return nil end
+	local bestPos = nil
+	local bestDist = Options.SilentAimFOV and Options.SilentAimFOV.Value or 100
+	local center = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+
+	for _, part in ipairs(workspace:GetDescendants()) do
+		if part:IsA("BasePart") and part.Name == "HumanoidRootPart" then
+			local model = part.Parent
+			if model and model ~= LocalPlayer.Character then
+				local hum = model:FindFirstChildOfClass("Humanoid")
+				if hum and hum.Health > 0 then
+					local pos = part.Position
+					local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(pos)
+					if onScreen then
+						local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+						if dist < bestDist then
+							bestDist = dist
+							bestPos = pos
+						end
+					end
+				end
+			end
+		end
+	end
+	return bestPos
+end
+
+-- Silent Aim FOV Circle (Purple)
+local silentAimFovCircle = nil
+pcall(function()
+	if typeof(Drawing) ~= "nil" then
+		silentAimFovCircle = Drawing.new("Circle")
+		silentAimFovCircle.Thickness = 1.5
+		silentAimFovCircle.Color = Color3.fromRGB(128, 0, 255) -- Purple
+		silentAimFovCircle.Filled = false
+		silentAimFovCircle.Transparency = 1
+		silentAimFovCircle.Visible = false
+	end
+end)
+
+-- Silent Aim Raycast Hook
+local Hooks = {}
+Hooks.Raycast = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+	local args = {...}
+	local method = getnamecallmethod():lower()
+	if Toggles.SilentAim.Value and target.position and method == "raycast" and self.Name == "Workspace" then
+		local dir = (target.position - workspace.CurrentCamera.CFrame.Position).Unit * 200
+		args[2] = dir
+		return Hooks.Raycast(self, table.unpack(args))
+	end
+	return Hooks.Raycast(self, ...)
+end))
+
+Toggles.SilentAim:OnChanged(function()
+	disconnect("SilentAimUpdate")
+	disconnect("SilentAimFOVCircleUpdate")
+	if silentAimFovCircle then silentAimFovCircle.Visible = false end
+	
+	if Toggles.SilentAim.Value then
+		track("SilentAimFOVCircleUpdate", RunService.RenderStepped:Connect(function()
+			if silentAimFovCircle then
+				local viewportSize = workspace.CurrentCamera.ViewportSize
+				silentAimFovCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+				silentAimFovCircle.Radius = Options.SilentAimFOV and Options.SilentAimFOV.Value or 100
+				silentAimFovCircle.Visible = true
+			end
+		end))
+		
+		track("SilentAimUpdate", RunService.Heartbeat:Connect(function()
+			local pos = getClosestTargetInFOV()
+			if pos then
+				target.position = pos
+			else
+				target.position = nil
+			end
+		end))
+		
+		Library:Notify({ Title = "Silent Aim", Description = "Silent Aim Enabled (Purple FOV)", Time = 2 })
+	end
+end)
 
 -- Phantom Mode Logic
 local phantomModeVars = {
@@ -4528,6 +4496,9 @@ Library:OnUnload(function()
 	if Toggles.AimbotLockOn and Toggles.AimbotLockOn.Value then
 		Toggles.AimbotLockOn:SetValue(false)
 	end
+	if Toggles.SilentAim and Toggles.SilentAim.Value then
+		Toggles.SilentAim:SetValue(false)
+	end
 	if Toggles.AttachToggle and Toggles.AttachToggle.Value then
 		Toggles.AttachToggle:SetValue(false)
 	end
@@ -4545,6 +4516,7 @@ Library:OnUnload(function()
 	end
 	pcall(function()
 		if fovCircle then fovCircle:Remove() end
+		if silentAimFovCircle then silentAimFovCircle:Remove() end
 		if cursorDrawings then
 			if cursorDrawings.square then cursorDrawings.square:Remove() end
 			if cursorDrawings.circle then cursorDrawings.circle:Remove() end
