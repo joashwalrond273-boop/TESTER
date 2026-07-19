@@ -3605,11 +3605,6 @@ FunLeft:AddToggle("TouchFling", {
 	Default = false,
 })
 
-FunLeft:AddToggle("SelfFling", {
-	Text = "Self Fling",
-	Default = false,
-})
-
 local FunCoolEmotes = Tabs["Fun Box"]:AddLeftGroupbox("COOL EMOTES", "smile")
 
 FunCoolEmotes:AddButton({
@@ -3688,25 +3683,6 @@ Toggles.TouchFling:OnChanged(function()
 	touchFlingActive = Toggles.TouchFling.Value
 	if touchFlingActive then
 		task.spawn(touchFlingLoop)
-	end
-end)
-
-local selfFlingActive = false
-local function selfFlingLoop()
-	while selfFlingActive and Toggles.SelfFling.Value do
-		RunService.Heartbeat:Wait()
-		local char = LocalPlayer.Character
-		local root = char and char:FindFirstChild("HumanoidRootPart")
-		if root then
-			root.Velocity = Vector3.new(math.random(-100000, 100000), math.random(50000, 150000), math.random(-100000, 100000))
-		end
-	end
-end
-
-Toggles.SelfFling:OnChanged(function()
-	selfFlingActive = Toggles.SelfFling.Value
-	if selfFlingActive then
-		task.spawn(selfFlingLoop)
 	end
 end)
 
@@ -4402,9 +4378,6 @@ Library:OnUnload(function()
 	end
 	if Toggles.TouchFling and Toggles.TouchFling.Value then
 		Toggles.TouchFling:SetValue(false)
-	end
-	if Toggles.SelfFling and Toggles.SelfFling.Value then
-		Toggles.SelfFling:SetValue(false)
 	end
 	if Toggles.AdminNearby and Toggles.AdminNearby.Value then
 		Toggles.AdminNearby:SetValue(false)
