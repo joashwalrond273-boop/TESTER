@@ -1299,11 +1299,6 @@ local DodgeAttackToggle = CombatAutoBlock:AddToggle("DodgeAttack", {
 	Default = false,
 })
 
-local AutoParryToggle = CombatAutoBlock:AddToggle("AutoParry", {
-	Text = "Auto Parry",
-	Default = false,
-})
-
 local isShielding = false
 local lastShieldFire = 0
 local function updateAutoShield()
@@ -1460,65 +1455,7 @@ Toggles.DodgeAttack:OnChanged(function()
 	end
 end)
 
-local isParrying = false
-local function checkParry()
-	if not isAlive() or not Toggles.AutoParry.Value or isParrying then return end
-	local root = getRootPart()
-	if not root then return end
-	
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and player.Character then
-			local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart")
-			local enemyHum = player.Character:FindFirstChildOfClass("Humanoid")
-			if enemyRoot and enemyHum and enemyHum.Health > 0 then
-				local dist = (enemyRoot.Position - root.Position).Magnitude
-				if dist <= 15 then
-					local animator = enemyHum:FindFirstChild("Animator")
-					if animator then
-						for _, trackObj in ipairs(animator:GetPlayingAnimationTracks()) do
-							if trackObj.TimePosition < 0.15 and trackObj.Speed > 0 then
-								if isSwingAnimation(trackObj) then
-									isParrying = true
-									task.spawn(function()
-										-- Block incoming attack
-										pcall(function()
-											game:GetService("ReplicatedStorage").remoteInterface.character.setShield:FireServer(true)
-										end)
-										
-										-- Wait for block to register/attack to hit shield
-										task.wait(0.2)
-										
-										-- Unblock
-										pcall(function()
-											game:GetService("ReplicatedStorage").remoteInterface.character.setShield:FireServer(false)
-										end)
-										
-										-- Counter-swing
-										local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-										if tool then
-											tool:Activate()
-										end
-										
-										task.wait(0.1)
-										isParrying = false
-									end)
-									break
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-end
 
-Toggles.AutoParry:OnChanged(function()
-	disconnect("AutoParry")
-	if Toggles.AutoParry.Value then
-		track("AutoParry", RunService.Heartbeat:Connect(checkParry))
-	end
-end)
 
 local function updateHighlight(hl, target, toggleValue)
 	if target and toggleValue then
@@ -3700,7 +3637,7 @@ FunRight:AddToggle("CustomCursorActive", {
 })
 
 FunRight:AddDropdown("CustomCursorType", {
-	Values = { "Tiny Square", "Circle", "X" },
+	Values = { "Tiny Square", "Circle", "X", "Dot", "Mouse Arrow" },
 	Default = "X",
 	Text = "Cursor Type",
 })
@@ -4243,7 +4180,13 @@ local cursorDrawings = {
 	square = nil,
 	circle = nil,
 	xLine1 = nil,
-	xLine2 = nil
+	xLine2 = nil,
+	dot = nil,
+	arrow1 = nil,
+	arrow2 = nil,
+	arrow3 = nil,
+	arrow4 = nil,
+	arrow5 = nil
 }
 
 local function initCursorDrawings()
@@ -4274,6 +4217,21 @@ local function initCursorDrawings()
 		cursorDrawings.xLine2.Thickness = 1.5
 		cursorDrawings.xLine2.Visible = false
 	end
+	if not cursorDrawings.dot then
+		cursorDrawings.dot = Drawing.new("Circle")
+		cursorDrawings.dot.Color = Color3.fromRGB(255, 255, 255)
+		cursorDrawings.dot.Filled = true
+		cursorDrawings.dot.Visible = false
+	end
+	for i = 1, 5 do
+		local key = "arrow" .. i
+		if not cursorDrawings[key] then
+			cursorDrawings[key] = Drawing.new("Line")
+			cursorDrawings[key].Color = Color3.fromRGB(255, 255, 255)
+			cursorDrawings[key].Thickness = 1.5
+			cursorDrawings[key].Visible = false
+		end
+	end
 end
 
 local function updateCursor()
@@ -4284,6 +4242,11 @@ local function updateCursor()
 	cursorDrawings.circle.Visible = false
 	cursorDrawings.xLine1.Visible = false
 	cursorDrawings.xLine2.Visible = false
+	if cursorDrawings.dot then cursorDrawings.dot.Visible = false end
+	for i = 1, 5 do
+		local key = "arrow" .. i
+		if cursorDrawings[key] then cursorDrawings[key].Visible = false end
+	end
 	
 	if not Toggles.CustomCursorActive or not Toggles.CustomCursorActive.Value then return end
 	
@@ -4309,6 +4272,36 @@ local function updateCursor()
 		cursorDrawings.xLine2.From = center - Vector2.new(-half, half)
 		cursorDrawings.xLine2.To = center + Vector2.new(-half, half)
 		cursorDrawings.xLine2.Visible = true
+	elseif cursorType == "Dot" then
+		cursorDrawings.dot.Radius = math.max(1, size / 4)
+		cursorDrawings.dot.Position = center
+		cursorDrawings.dot.Visible = true
+	elseif cursorType == "Mouse Arrow" then
+		local p0 = center
+		local p1 = center + Vector2.new(0, size)
+		local p2 = center + Vector2.new(size * 0.7, size * 0.7)
+		local p3 = center + Vector2.new(size * 0.3, size * 0.7)
+		local p4 = center + Vector2.new(size * 0.6, size * 1.0)
+		
+		cursorDrawings.arrow1.From = p0
+		cursorDrawings.arrow1.To = p1
+		cursorDrawings.arrow1.Visible = true
+		
+		cursorDrawings.arrow2.From = p0
+		cursorDrawings.arrow2.To = p2
+		cursorDrawings.arrow2.Visible = true
+		
+		cursorDrawings.arrow3.From = p1
+		cursorDrawings.arrow3.To = p3
+		cursorDrawings.arrow3.Visible = true
+		
+		cursorDrawings.arrow4.From = p2
+		cursorDrawings.arrow4.To = p3
+		cursorDrawings.arrow4.Visible = true
+		
+		cursorDrawings.arrow5.From = p3
+		cursorDrawings.arrow5.To = p4
+		cursorDrawings.arrow5.Visible = true
 	end
 end
 
@@ -4374,9 +4367,6 @@ SaveManager:LoadAutoloadConfig()
 
 Library:OnUnload(function()
 
-	if Toggles.AutoParry and Toggles.AutoParry.Value then
-		Toggles.AutoParry:SetValue(false)
-	end
 	if Toggles.DesyncToggle and Toggles.DesyncToggle.Value then
 		Toggles.DesyncToggle:SetValue(false)
 	end
@@ -4441,6 +4431,11 @@ Library:OnUnload(function()
 			if cursorDrawings.circle then cursorDrawings.circle:Remove() end
 			if cursorDrawings.xLine1 then cursorDrawings.xLine1:Remove() end
 			if cursorDrawings.xLine2 then cursorDrawings.xLine2:Remove() end
+			if cursorDrawings.dot then cursorDrawings.dot:Remove() end
+			for i = 1, 5 do
+				local key = "arrow" .. i
+				if cursorDrawings[key] then cursorDrawings[key]:Remove() end
+			end
 		end
 	end)
 	for name in pairs(Connections) do
