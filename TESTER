@@ -1206,12 +1206,14 @@ CombatLeft:AddSlider("KillAuraAngle", {
 	Rounding = 0,
 })
 
-CombatLeft:AddToggle("PhantomMode", {
+local CombatPhantomAura = Tabs.Combat:AddLeftGroupbox("Phantom Aura", "ghost")
+
+CombatPhantomAura:AddToggle("PhantomMode", {
 	Text = "Phantom Mode",
 	Default = false,
 })
 
-CombatLeft:AddSlider("RangeAura", {
+CombatPhantomAura:AddSlider("RangeAura", {
 	Text = "Range Aura",
 	Default = 20,
 	Min = 5,
@@ -1219,7 +1221,7 @@ CombatLeft:AddSlider("RangeAura", {
 	Rounding = 1,
 })
 
-CombatLeft:AddToggle("AutoSwing", {
+CombatPhantomAura:AddToggle("AutoSwing", {
 	Text = "Auto Swing",
 	Default = false,
 })
