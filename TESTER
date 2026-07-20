@@ -3217,11 +3217,7 @@ VisualFPS:AddToggle("NoGrass", {
 	Text = "No Grass",
 	Default = false,
 	Callback = function(state)
-		if state then
---[[ 
-     WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk! 
- ]] 
-if not game:IsLoaded() then 
+		if not game:IsLoaded() then 
     repeat 
         task.wait() 
     until game:IsLoaded() 
