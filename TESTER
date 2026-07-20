@@ -3192,6 +3192,17 @@ VisualFPS:AddToggle("NoGrass", {
 			pcall(function()
 				loadstring(game:HttpGet("https://raw.githubusercontent.com/joashwalrond273-boop/Silent-Aim/refs/heads/main/No%20grass"))()
 			end)
+		else
+			pcall(function()
+				local terrain = workspace:FindFirstChildOfClass("Terrain")
+				if terrain then
+					if sethiddenproperty then
+						sethiddenproperty(terrain, "Decoration", true)
+					else
+						terrain.Decoration = true
+					end
+				end
+			end)
 		end
 	end,
 })
@@ -3217,6 +3228,7 @@ VisualFPS:AddToggle("LowTextures", {
 				if Toggles.LowTextures.Value then
 					if v:IsA("BasePart") or v:IsA("MeshPart") then
 						pcall(function() v.Material = Enum.Material.Plastic end)
+					end
 				end
 			end))
 		else
