@@ -4044,15 +4044,7 @@ local function onInvisibleFlyToggle(state)
 				task.wait()
 			until LocalPlayer.Character
 
-			LocalPlayer.Character.Archivable = true
 			invisibleFlyVars.playerClone = LocalPlayer.Character:Clone()
-			for _, part in ipairs(invisibleFlyVars.playerClone:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Transparency = 0.7
-				elseif part:IsA("Decal") then
-					part.Transparency = 0.7
-				end
-			end
 			invisibleFlyVars.playerClone.Parent = workspace
 			
 			-- Create and apply highlight
