@@ -3218,7 +3218,12 @@ VisualFPS:AddToggle("NoGrass", {
 	Default = false,
 	Callback = function(state)
 		if state then
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/joashwalrond273-boop/Silent-Aim/refs/heads/main/No%20grass"))()
+			Library:Notify({Title = "No Grass", Description = "Enabled", Time = 2})
+			pcall(function()
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/joashwalrond273-boop/Silent-Aim/refs/heads/main/No%20grass"))()
+			end)
+		else
+			Library:Notify({Title = "No Grass", Description = "Disabled", Time = 2})
 		end
 	end,
 })
