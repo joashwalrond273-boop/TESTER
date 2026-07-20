@@ -3781,85 +3781,37 @@ Toggles.FloatOverToggle:OnChanged(function()
 end)
 
 -- + Fling Player Script Logic
-local plusFlingHeartbeatConnections = {}
-local plusFlingBodyPositions = {}
-local plusFlingKeyConnection = nil
+Toggles.PlusFlingPlayerToggle:OnChanged(function()
+	if Toggles.PlusFlingPlayerToggle.Value then
+		local char = LocalPlayer.Character
+		local player = LocalPlayer
+		local mouse = player:GetMouse()
+		local uis = game:GetService("UserInputService")
+		local bp = Instance.new("BodyPosition")
 
-local function cleanupPlusFling()
-	-- Clean up all Heartbeat connections
-	for _, conn in ipairs(plusFlingHeartbeatConnections) do
-		pcall(function() conn:Disconnect() end)
-	end
-	table.clear(plusFlingHeartbeatConnections)
-	
-	-- Clean up all BodyPositions
-	for _, bp in ipairs(plusFlingBodyPositions) do
-		pcall(function() bp:Destroy() end)
-	end
-	table.clear(plusFlingBodyPositions)
-	
-	-- Clean up the key connection
-	if plusFlingKeyConnection then
-		pcall(function() plusFlingKeyConnection:Disconnect() end)
-		plusFlingKeyConnection = nil
-	end
-end
-
-local function startPlusFling()
-	cleanupPlusFling()
-	if not Toggles.PlusFlingPlayerToggle.Value then return end
-	
-	local char = getCharacter()
-	local player = LocalPlayer
-	local mouse = player:GetMouse()
-	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-	
-	-- First part: Loop through all unanchored parts and add Heartbeat connections
-	for _, v in ipairs(game:GetDescendants()) do
-		if v:IsA("BasePart") and not v.Anchored and v.Parent ~= char and not v:IsDescendantOf(char) and v.Parent.ClassName ~= "Accessory" then
-			local conn = RunService.Heartbeat:Connect(function()
-				v.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-				v.Velocity = Vector3.new(25.70, 0, 0)
-				v.RotVelocity = Vector3.new(9e9, 9e9, 9e9)
-				v.CanCollide = false
-			end)
-			table.insert(plusFlingHeartbeatConnections, conn)
-		end
-	end
-	
-	-- Second part: Loop through workspace parts and add BodyPosition and mouse key connection
-	for _, v in ipairs(workspace:GetDescendants()) do
-		if v:IsA("BasePart") and not v.Anchored and v.Parent ~= char and not v:IsDescendantOf(char) and v.Parent.ClassName ~= "Accessory" then
-			local bp = Instance.new("BodyPosition")
-			bp.Parent = v
-			bp.Position = char.HumanoidRootPart.Position + Vector3.new(0, 5, 0)
-			table.insert(plusFlingBodyPositions, bp)
-		end
-	end
-	
-	-- Bind T key
-	plusFlingKeyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
-		if input.KeyCode == Enum.KeyCode.T then
-			if not (Toggles.PlusFlingPlayerToggle.Value and char and char:FindFirstChild("HumanoidRootPart")) then return end
-			local target = mouse.Target
-			if not target then return end
-			for _, bp in ipairs(plusFlingBodyPositions) do
-				pcall(function()
-					bp.Position = target.Position + Vector3.new(0, math.sin(10/10), 0)
+		for _, v in next, game:GetDescendants() do
+			if v:IsA("Part") and v.Anchored == false and v.Parent ~= char and v.Parent.ClassName ~= "Accessory" then
+				RunService.Heartbeat:Connect(function()
+					v.CustomPhysicalProperties = PhysicalProperties.new(0,0,0,0,0)
+					v.Velocity = Vector3.new(25.70,0,0)
+					v.RotVelocity = Vector3.new(9e9,9e9,9e9)
+					v.CanCollide = false
 				end)
 			end
 		end
-	end)
-end
-
-Toggles.PlusFlingPlayerToggle:OnChanged(startPlusFling)
-
--- Also clean up if character resets
-LocalPlayer.CharacterAdded:Connect(function()
-	if Toggles.PlusFlingPlayerToggle.Value then
-		task.wait(1)
-		startPlusFling()
+		for _, v in next, game.workspace:GetDescendants() do
+			if v:IsA("Part") and v.Anchored == false and v.Parent ~= char and v.Parent.ClassName ~= "Accessory" then
+				local bp = Instance.new("BodyPosition")
+				bp.Parent = v
+				bp.Position = char.HumanoidRootPart.Position + Vector3.new(0,5,0)
+				bind = "t" -- has to be lowercase
+				mouse.KeyDown:connect(function(key)
+					if key == bind then
+						bp.Position = mouse.Target.Position + Vector3.new(0,math.sin(10/10))
+					end
+				end)
+			end
+		end
 	end
 end)
 
@@ -4554,7 +4506,6 @@ Library:OnUnload(function()
 	end
 	if Toggles.PlusFlingPlayerToggle and Toggles.PlusFlingPlayerToggle.Value then
 		Toggles.PlusFlingPlayerToggle:SetValue(false)
-		cleanupPlusFling()
 	end
 	if Toggles.Multiplier and Toggles.Multiplier.Value then
 		Toggles.Multiplier:SetValue(false)
