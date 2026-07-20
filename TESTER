@@ -2,7 +2,7 @@
 -- Docs: https://docs.mspaint.cc/obsidian
 
 if getgenv().TSG_OBSIDIAN_LOADED then
-	return warn("[TSG] Script already loaded ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â rejoin to re-execute.")
+	return warn("[TSG] Script already loaded ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â rejoin to re-execute.")
 end
 getgenv().TSG_OBSIDIAN_LOADED = true
 
@@ -2557,7 +2557,6 @@ OreFarm:AddButton({
 	end,
 })
 
-
 local FarmDupe = Tabs.Farming:AddRightGroupbox("DUPE ITEMS", "copy")
 
 FarmDupe:AddToggle("Multiplier", {
@@ -3058,7 +3057,7 @@ local waypoints = {}
 local function updateWaypointDropdown()
 	local list = {}
 	for name in pairs(waypoints) do
-		table.insert(list, "ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµ " .. name)
+		table.insert(list, "ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµ " .. name)
 	end
 	table.sort(list)
 	Options.WaypointList:SetValues(list)
@@ -3944,34 +3943,6 @@ local invisibleFlyVars = {
 	highlight = nil
 }
 
-local originalTransparencies = {}
-local function setCharacterTransparency(char, transparency)
-	if not char then return end
-	pcall(function()
-		for _, part in ipairs(char:GetDescendants()) do
-			if part:IsA("BasePart") or part:IsA("Decal") then
-				pcall(function()
-					if transparency then
-						if not originalTransparencies[part] then
-							originalTransparencies[part] = part.Transparency
-						end
-						part.Transparency = transparency
-					else
-						if originalTransparencies[part] then
-							part.Transparency = originalTransparencies[part]
-						else
-							part.Transparency = 0
-						end
-					end
-				end)
-			end
-		end
-	end)
-	if not transparency then
-		originalTransparencies = {}
-	end
-end
-
 local function onInvisibleFlyToggle(state)
 	invisibleFlyVars.invisiblefly = state
 
@@ -3982,18 +3953,8 @@ local function onInvisibleFlyToggle(state)
 				task.wait()
 			until LocalPlayer.Character
 
-			pcall(function()
-				LocalPlayer.Character.Archivable = true
-				invisibleFlyVars.playerClone = LocalPlayer.Character:Clone()
-				for _, part in ipairs(invisibleFlyVars.playerClone:GetDescendants()) do
-					if part:IsA("BasePart") or part:IsA("Decal") then
-						part.Transparency = 0.7
-					end
-				end
-				invisibleFlyVars.playerClone.Parent = workspace
-			end)
-			
-			setCharacterTransparency(LocalPlayer.Character, 0.7)
+			invisibleFlyVars.playerClone = LocalPlayer.Character:Clone()
+			invisibleFlyVars.playerClone.Parent = workspace
 			
 			-- Create and apply highlight
 			local hl = Instance.new("Highlight")
@@ -4028,9 +3989,7 @@ local function onInvisibleFlyToggle(state)
 
 				workspace.CurrentCamera.CameraSubject = invisibleFlyVars.playerClone:FindFirstChild("Humanoid") or hum
 				hum:ChangeState("Climbing")
-				pcall(function()
-					LocalPlayer.Character:PivotTo(invisibleFlyVars.playerClone:GetPivot() + Vector3.new(0, 500, 0))
-				end)
+				LocalPlayer.Character:PivotTo(invisibleFlyVars.playerClone:GetPivot() + Vector3.new(0, 500, 0))
 				root.Velocity = Vector3.zero
 
 				local lookPosition = workspace.CurrentCamera.CFrame.Position + workspace.CurrentCamera.CFrame.LookVector * 9999
@@ -4064,36 +4023,30 @@ local function onInvisibleFlyToggle(state)
 			workspace.CurrentCamera.CameraSubject = getHumanoid()
 
 			if invisibleFlyVars.highlight then
-				pcall(function() invisibleFlyVars.highlight:Destroy() end)
+				invisibleFlyVars.highlight:Destroy()
 				invisibleFlyVars.highlight = nil
 			end
 			
 			if invisibleFlyVars.playerClone then
-				pcall(function()
-					LocalPlayer.Character:PivotTo(invisibleFlyVars.playerClone:GetPivot())
-					invisibleFlyVars.playerClone:Destroy()
-				end)
+				LocalPlayer.Character:PivotTo(invisibleFlyVars.playerClone:GetPivot())
+				invisibleFlyVars.playerClone:Destroy()
 				invisibleFlyVars.playerClone = nil
 			end
-			setCharacterTransparency(LocalPlayer.Character, nil)
 		end)
 	else
 		if invisibleFlyVars.wasInvisibleFlyEnabled then
 			local root = getRootPart()
 			if root then
-				pcall(function()
-					local currentCFrame = root.CFrame
-					local newCFrame = CFrame.new(currentCFrame.Position.X, currentCFrame.Position.Y - 500, currentCFrame.Position.Z)
-					LocalPlayer.Character:PivotTo(newCFrame)
-				end)
+				local currentCFrame = root.CFrame
+				local newCFrame = CFrame.new(currentCFrame.Position.X, currentCFrame.Position.Y - 500, currentCFrame.Position.Z)
+				LocalPlayer.Character:PivotTo(newCFrame)
 			end
 			invisibleFlyVars.wasInvisibleFlyEnabled = false
 			
 			if invisibleFlyVars.highlight then
-				pcall(function() invisibleFlyVars.highlight:Destroy() end)
+				invisibleFlyVars.highlight:Destroy()
 				invisibleFlyVars.highlight = nil
 			end
-			setCharacterTransparency(LocalPlayer.Character, nil)
 		end
 	end
 end
