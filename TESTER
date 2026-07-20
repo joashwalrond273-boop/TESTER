@@ -1224,18 +1224,18 @@ CombatLeft:AddToggle("AutoSwing", {
 	Default = false,
 })
 
-local CombatSilentAim = Tabs.Combat:AddLeftGroupbox("Silent Aim", "target")
+local CombatAutoSpin = Tabs.Combat:AddLeftGroupbox("Auto Spin", "refresh-cw")
 
-CombatSilentAim:AddToggle("SilentAim", {
-	Text = "Silent Aim",
+CombatAutoSpin:AddToggle("AutoSpin", {
+	Text = "Auto Spin",
 	Default = false,
 })
 
-CombatSilentAim:AddSlider("SilentAimFOV", {
-	Text = "FOV",
-	Default = 100,
-	Min = 30,
-	Max = 300,
+CombatAutoSpin:AddSlider("SpinSpeed", {
+	Text = "Spin Speed",
+	Default = 50,
+	Min = 10,
+	Max = 150,
 	Rounding = 0,
 })
 
@@ -1755,181 +1755,17 @@ Toggles.AutoSwing:OnChanged(function()
 	end
 end)
 
--- Silent Aim
-local target = { enabled = false, position = nil }
-
-local function getClosestTargetInSilentAimFOV()
-	if not Toggles.SilentAim.Value then return nil end
-	local bestTarget = nil
-	local bestDist = Options.SilentAimFOV and Options.SilentAimFOV.Value or 100
-	local center = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-
-	-- Scan Players
-	for _, otherPlayer in ipairs(Players:GetPlayers()) do
-		if otherPlayer ~= LocalPlayer and otherPlayer.Character then
-			local otherHum = otherPlayer.Character:FindFirstChildOfClass("Humanoid")
-			local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-			if otherHum and otherHum.Health > 0 and otherRoot then
-				local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(otherRoot.Position)
-				if onScreen then
-					local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-					if dist < bestDist then
-						bestDist = dist
-						bestTarget = otherPlayer.Character
-					end
-				end
-			end
-		end
-	end
-
-	-- Scan NPC AI Models (AI_Client)
-	local aiClient = workspace:FindFirstChild("AI_Client")
-	if aiClient then
-		for _, npc in ipairs(aiClient:GetChildren()) do
-			local npcHum = npc:FindFirstChildOfClass("Humanoid")
-			local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
-			if npcHum and npcHum.Health > 0 and npcRoot then
-				local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(npcRoot.Position)
-				if onScreen then
-					local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-					if dist < bestDist then
-						bestDist = dist
-						bestTarget = npc
-					end
-				end
-			end
-		end
-	end
-
-	-- Scan NPC AI Models (AI_Server)
-	local aiServer = workspace:FindFirstChild("AI_Server")
-	if aiServer then
-		for _, npc in ipairs(aiServer:GetChildren()) do
-			local npcHum = npc:FindFirstChildOfClass("Humanoid")
-			local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
-			if (not npcHum or npcHum.Health > 0) and npcRoot then
-				local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(npcRoot.Position)
-				if onScreen then
-					local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-					if dist < bestDist then
-						bestDist = dist
-						bestTarget = npc
-					end
-				end
-			end
-		end
-	end
-
-	return bestTarget
-end
-
--- Silent Aim FOV Circle (Purple)
-local silentAimFovCircle = nil
-pcall(function()
-	if typeof(Drawing) ~= "nil" then
-		silentAimFovCircle = Drawing.new("Circle")
-		silentAimFovCircle.Thickness = 1.5
-		silentAimFovCircle.Color = Color3.fromRGB(128, 0, 255) -- Purple
-		silentAimFovCircle.Filled = false
-		silentAimFovCircle.Transparency = 1
-		silentAimFovCircle.Visible = false
-	end
-end)
-
--- Silent Aim Raycast Hook
-local Hooks = {}
-Hooks.Raycast = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-	local args = {...}
-	local method = getnamecallmethod():lower()
-	if Toggles.SilentAim.Value and target.position and method == "raycast" and self.Name == "Workspace" then
-		local dir = (target.position - workspace.CurrentCamera.CFrame.Position).Unit * 200
-		args[2] = dir
-		return Hooks.Raycast(self, table.unpack(args))
-	end
-	return Hooks.Raycast(self, ...)
-end))
-
--- Silent Aim Tool Activation Hook (for TSG's combat remotes)
-local function connectSilentAimTool(tool)
-	disconnect("SilentAimToolConn")
-	track("SilentAimToolConn", tool.Activated:Connect(function()
-		if Toggles.SilentAim.Value then
-			local nearestTarget = getClosestTargetInSilentAimFOV()
-			if nearestTarget then
-				local slot = tonumber(tool.Name) or 1
-				local targetPlayer = Players:GetPlayerFromCharacter(nearestTarget)
-				if targetPlayer then
-					if Crypt then
-						pcall(function()
-							local k1, k2, k3 = Crypt.checkpublickeys()
-							if k1 and k2 and k3 then
-								local encryptedUserId = Crypt.crypt(k1, math.abs(targetPlayer.UserId) + k3, k2)
-								TSG.MeleePlayerRemote:FireServer(slot, encryptedUserId)
-							end
-						end)
-					else
-						pcall(TSG.MeleePlayerRemote.FireServer, TSG.MeleePlayerRemote, slot, targetPlayer)
-					end
-				else
-					attackNPC(slot, nearestTarget)
-				end
-			end
-		end
-	end))
-end
-
-local function setupSilentAimTracking()
-	disconnect("SilentAimChildAdded")
-	disconnect("SilentAimToolConn")
-	
-	local char = LocalPlayer.Character
-	if char then
-		track("SilentAimChildAdded", char.ChildAdded:Connect(function(child)
-			if child:IsA("Tool") then
-				connectSilentAimTool(child)
+Toggles.AutoSpin:OnChanged(function()
+	disconnect("AutoSpin")
+	if Toggles.AutoSpin.Value then
+		track("AutoSpin", RunService.Heartbeat:Connect(function(dt)
+			if not isAlive() then return end
+			local root = getRootPart()
+			if root then
+				local speed = Options.SpinSpeed.Value
+				root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(speed * dt * 10), 0)
 			end
 		end))
-		local tool = char:FindFirstChildOfClass("Tool")
-		if tool then
-			connectSilentAimTool(tool)
-		end
-	end
-end
-
-track("SilentAimCharacterAdded", LocalPlayer.CharacterAdded:Connect(function()
-	task.wait(1)
-	setupSilentAimTracking()
-end))
-setupSilentAimTracking()
-
-Toggles.SilentAim:OnChanged(function()
-	disconnect("SilentAimUpdate")
-	disconnect("SilentAimFOVCircleUpdate")
-	if silentAimFovCircle then silentAimFovCircle.Visible = false end
-	
-	if Toggles.SilentAim.Value then
-		track("SilentAimFOVCircleUpdate", RunService.RenderStepped:Connect(function()
-			if silentAimFovCircle then
-				local viewportSize = workspace.CurrentCamera.ViewportSize
-				silentAimFovCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
-				silentAimFovCircle.Radius = Options.SilentAimFOV and Options.SilentAimFOV.Value or 100
-				silentAimFovCircle.Visible = true
-			end
-		end))
-		
-		track("SilentAimUpdate", RunService.Heartbeat:Connect(function()
-			local nearestTarget = getClosestTargetInSilentAimFOV()
-			if nearestTarget then
-				local targetRoot = nearestTarget:FindFirstChild("HumanoidRootPart") or nearestTarget.PrimaryPart
-				if targetRoot then
-					target.position = targetRoot.Position
-				end
-			else
-				target.position = nil
-			end
-		end))
-		
-		Library:Notify({ Title = "Silent Aim", Description = "Silent Aim Enabled (Purple FOV)", Time = 2 })
 	end
 end)
 
@@ -3793,6 +3629,11 @@ FunAttach:AddDropdown("AttachPlayerList", {
 	Default = "",
 })
 
+FunAttach:AddToggle("HideBeneathToggle", {
+	Text = "Hide Beneath",
+	Default = false,
+})
+
 local FunRight = Tabs["Fun Box"]:AddRightGroupbox("Show Cursor", "mouse-pointer")
 
 FunRight:AddToggle("CustomCursorActive", {
@@ -3899,7 +3740,11 @@ local function startAttach()
 						part.CanCollide = false
 					end
 				end
-				myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2.5)
+				if Toggles.HideBeneathToggle.Value then
+					myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, -6, 0) -- Below feet
+				else
+					myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2.5) -- Behind player
+				end
 				myRoot.Velocity = Vector3.zero
 			end
 		end))
@@ -3908,6 +3753,11 @@ end
 
 Toggles.AttachToggle:OnChanged(startAttach)
 Options.AttachPlayerList:OnChanged(function()
+	if Toggles.AttachToggle.Value then
+		startAttach()
+	end
+end)
+Toggles.HideBeneathToggle:OnChanged(function()
 	if Toggles.AttachToggle.Value then
 		startAttach()
 	end
@@ -4589,11 +4439,11 @@ Library:OnUnload(function()
 	if Toggles.AimbotLockOn and Toggles.AimbotLockOn.Value then
 		Toggles.AimbotLockOn:SetValue(false)
 	end
-	if Toggles.SilentAim and Toggles.SilentAim.Value then
-		Toggles.SilentAim:SetValue(false)
-	end
 	if Toggles.AttachToggle and Toggles.AttachToggle.Value then
 		Toggles.AttachToggle:SetValue(false)
+	end
+	if Toggles.HideBeneathToggle and Toggles.HideBeneathToggle.Value then
+		Toggles.HideBeneathToggle:SetValue(false)
 	end
 	if Toggles.Multiplier and Toggles.Multiplier.Value then
 		Toggles.Multiplier:SetValue(false)
@@ -4609,7 +4459,6 @@ Library:OnUnload(function()
 	end
 	pcall(function()
 		if fovCircle then fovCircle:Remove() end
-		if silentAimFovCircle then silentAimFovCircle:Remove() end
 		if cursorDrawings then
 			if cursorDrawings.square then cursorDrawings.square:Remove() end
 			if cursorDrawings.circle then cursorDrawings.circle:Remove() end
