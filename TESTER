@@ -3634,6 +3634,11 @@ FunAttach:AddToggle("HideBeneathToggle", {
 	Default = false,
 })
 
+FunAttach:AddToggle("FloatOverToggle", {
+	Text = "Float Over",
+	Default = false,
+})
+
 local FunRight = Tabs["Fun Box"]:AddRightGroupbox("Show Cursor", "mouse-pointer")
 
 FunRight:AddToggle("CustomCursorActive", {
@@ -3740,7 +3745,9 @@ local function startAttach()
 						part.CanCollide = false
 					end
 				end
-				if Toggles.HideBeneathToggle.Value then
+				if Toggles.FloatOverToggle.Value then
+					myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 6, 0) -- Over head
+				elseif Toggles.HideBeneathToggle.Value then
 					myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, -6, 0) -- Below feet
 				else
 					myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2.5) -- Behind player
@@ -3758,6 +3765,11 @@ Options.AttachPlayerList:OnChanged(function()
 	end
 end)
 Toggles.HideBeneathToggle:OnChanged(function()
+	if Toggles.AttachToggle.Value then
+		startAttach()
+	end
+end)
+Toggles.FloatOverToggle:OnChanged(function()
 	if Toggles.AttachToggle.Value then
 		startAttach()
 	end
@@ -4444,6 +4456,9 @@ Library:OnUnload(function()
 	end
 	if Toggles.HideBeneathToggle and Toggles.HideBeneathToggle.Value then
 		Toggles.HideBeneathToggle:SetValue(false)
+	end
+	if Toggles.FloatOverToggle and Toggles.FloatOverToggle.Value then
+		Toggles.FloatOverToggle:SetValue(false)
 	end
 	if Toggles.Multiplier and Toggles.Multiplier.Value then
 		Toggles.Multiplier:SetValue(false)
