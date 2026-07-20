@@ -3184,6 +3184,18 @@ VisualFPS:AddToggle("DisableShadows", {
 	end,
 })
 
+VisualFPS:AddToggle("NoGrass", {
+	Text = "No Grass",
+	Default = false,
+	Callback = function(state)
+		if state then
+			pcall(function()
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/joashwalrond273-boop/Silent-Aim/refs/heads/main/No%20grass"))()
+			end)
+		end
+	end,
+})
+
 VisualFPS:AddToggle("LowTextures", {
 	Text = "Low Textures",
 	Default = false,
@@ -3213,20 +3225,7 @@ VisualFPS:AddToggle("LowTextures", {
 	end,
 })
 
-VisualFPS:AddToggle("NoGrass", {
-	Text = "No Grass",
-	Default = false,
-	Callback = function(state)
-		if state then
-			Library:Notify({Title = "No Grass", Description = "Enabled", Time = 2})
-			pcall(function()
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/joashwalrond273-boop/Silent-Aim/refs/heads/main/No%20grass"))()
-			end)
-		else
-			Library:Notify({Title = "No Grass", Description = "Disabled", Time = 2})
-		end
-	end,
-})
+
 
 VisualFPS:AddToggle("DisableEffects", {
 	Text = "Disable Effects",
@@ -4499,7 +4498,7 @@ Library:OnUnload(function()
 	if Toggles.NoGrass and Toggles.NoGrass.Value then
 		Toggles.NoGrass:SetValue(false)
 	end
-	if Toggles.AdamantiteFarm and Toggles.AdamantiteFarm.Value then
+    if Toggles.AdamantiteFarm and Toggles.AdamantiteFarm.Value then
 		Toggles.AdamantiteFarm:SetValue(false)
 	end
 	if Toggles.UltraFPSBoost and Toggles.UltraFPSBoost.Value then
