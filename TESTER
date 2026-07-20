@@ -4394,6 +4394,10 @@ end)
 Library.ToggleKeybind = Options.MenuKeybind
 
 ThemeManager:SetLibrary(Library)
+-- Set default accent color to red
+ThemeManager:SetDefaultTheme({
+	AccentColor = "ff0000" -- Red
+})
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
 SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
