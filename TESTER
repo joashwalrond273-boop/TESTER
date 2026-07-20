@@ -352,6 +352,17 @@ Toggles.KillswitchToggle:OnChanged(function()
 	end
 end)
 
+KillswitchGroup:AddToggle("KillBulliesToggle", {
+	Text = "Kill Bullies",
+	Default = false,
+})
+
+KillswitchGroup:AddDropdown("KillBulliesPlayerList", {
+	Text = "Select Player",
+	Values = {},
+	Default = "",
+})
+
 local InvisibleFlyGroup = Tabs.Main:AddLeftGroupbox("Invisible Fly", "plane")
 
 InvisibleFlyGroup:AddToggle("InvisibleFlyToggle", {
@@ -3775,6 +3786,88 @@ Toggles.FloatOverToggle:OnChanged(function()
 	end
 end)
 
+-- Kill Bullies Script Logic
+local function updateKillBulliesPlayerList()
+	local list = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			table.insert(list, player.Name)
+		end
+	end
+	pcall(function()
+		Options.KillBulliesPlayerList:SetValues(list)
+		if #list > 0 then
+			if not table.find(list, Options.KillBulliesPlayerList.Value) then
+				Options.KillBulliesPlayerList:SetValue(list[1])
+			end
+		else
+			Options.KillBulliesPlayerList:SetValue("")
+		end
+	end)
+end
+
+track("KillBulliesPlayerAdded", Players.PlayerAdded:Connect(updateKillBulliesPlayerList))
+track("KillBulliesPlayerRemoving", Players.PlayerRemoving:Connect(updateKillBulliesPlayerList))
+task.spawn(updateKillBulliesPlayerList)
+
+local killBulliesActive = false
+
+local function killBulliesLoop()
+	local movel = 0.1
+	while killBulliesActive and Toggles.KillBulliesToggle.Value do
+		RunService.Heartbeat:Wait()
+		if not killBulliesActive then break end
+		local targetName = Options.KillBulliesPlayerList.Value
+		if not targetName or targetName == "" then continue end
+		
+		local targetPlayer = Players:FindFirstChild(targetName)
+		local targetChar = targetPlayer and targetPlayer.Character
+		local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+		local char = getCharacter()
+		local myRoot = getRootPart()
+		
+		if targetRoot and myRoot and isAlive() then
+			-- Attach very close behind target
+			for _, part in ipairs(char:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = false
+				end
+			end
+			myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 1) -- Very close behind
+			myRoot.Velocity = Vector3.zero
+			
+			-- Touch Fling
+			local vel = myRoot.Velocity
+			myRoot.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+			RunService.RenderStepped:Wait()
+			if not killBulliesActive then break end
+			myRoot.Velocity = vel
+			RunService.Stepped:Wait()
+			if not killBulliesActive then break end
+			myRoot.Velocity = vel + Vector3.new(0, movel, 0)
+			movel = -movel
+		end
+	end
+end
+
+Toggles.KillBulliesToggle:OnChanged(function()
+	killBulliesActive = Toggles.KillBulliesToggle.Value
+	if killBulliesActive then
+		task.spawn(killBulliesLoop)
+	end
+end)
+Options.KillBulliesPlayerList:OnChanged(function()
+	if Toggles.KillBulliesToggle.Value then
+		-- Restart if player list changes while active
+		killBulliesActive = false
+		task.wait()
+		killBulliesActive = Toggles.KillBulliesToggle.Value
+		if killBulliesActive then
+			task.spawn(killBulliesLoop)
+		end
+	end
+end)
+
 -- Dupe Items Script Logic
 Toggles.Multiplier:OnChanged(function()
 	disconnect("DupeDropTrack")
@@ -4475,6 +4568,9 @@ Library:OnUnload(function()
 	end
 	if Toggles.ShadowTheGoat and Toggles.ShadowTheGoat.Value then
 		Toggles.ShadowTheGoat:SetValue(false)
+	end
+	if Toggles.KillBulliesToggle and Toggles.KillBulliesToggle.Value then
+		Toggles.KillBulliesToggle:SetValue(false)
 	end
 	pcall(function()
 		if fovCircle then fovCircle:Remove() end
