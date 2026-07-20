@@ -3218,37 +3218,32 @@ VisualFPS:AddToggle("NoGrass", {
 	Default = false,
 	Callback = function(state)
 		if state then
-			coroutine.wrap(pcall)(function()
-				local terrain = workspace:FindFirstChildOfClass("Terrain")
-				if not terrain then
-					repeat
-						task.wait()
-					until workspace:FindFirstChildOfClass("Terrain")
-					terrain = workspace:FindFirstChildOfClass("Terrain")
-				end
-				if sethiddenproperty then
-					sethiddenproperty(terrain, "Decoration", false)
-				else
-					warn("Your exploit does not support sethiddenproperty, please use a different exploit.")
-				end
-				if _G.ConsoleLogs then
-					warn("Decorations Disabled")
-				end
-			end)
-		else
-			-- Try to re-enable decorations when turned off
-			coroutine.wrap(pcall)(function()
-				local terrain = workspace:FindFirstChildOfClass("Terrain")
-				if not terrain then
-					repeat
-						task.wait()
-					until workspace:FindFirstChildOfClass("Terrain")
-					terrain = workspace:FindFirstChildOfClass("Terrain")
-				end
-				if sethiddenproperty then
-					sethiddenproperty(terrain, "Decoration", true)
-				end
-			end)
+--[[ 
+     WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk! 
+ ]] 
+if not game:IsLoaded() then 
+    repeat 
+        task.wait() 
+    until game:IsLoaded() 
+end 
+
+coroutine.wrap(pcall)(function() 
+    local terrain = workspace:FindFirstChildOfClass("Terrain") 
+    if not terrain then 
+        repeat 
+            task.wait() 
+        until workspace:FindFirstChildOfClass("Terrain") 
+        terrain = workspace:FindFirstChildOfClass("Terrain") 
+    end 
+    if sethiddenproperty then 
+        sethiddenproperty(terrain, "Decoration", false) 
+    else 
+        warn("Your exploit does not support sethiddenproperty, please use a different exploit.") 
+    end 
+    if _G.ConsoleLogs then 
+        warn("Decorations Disabled") 
+    end 
+end) 
 		end
 	end,
 })
