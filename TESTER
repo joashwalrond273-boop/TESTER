@@ -341,13 +341,6 @@ KillswitchGroup:AddToggle("KillswitchToggle", {
 	Default = false,
 })
 
-local CamlockGroup = Tabs.Main:AddLeftGroupbox("CAMLOCK", "target")
-
-CamlockGroup:AddToggle("CamlockToggle", {
-	Text = "Lock On",
-	Default = false,
-})
-
 Toggles.KillswitchToggle:OnChanged(function()
 	if Toggles.KillswitchToggle.Value then
 		local humanoid = getHumanoid()
@@ -1897,54 +1890,6 @@ Toggles.PhantomMode:OnChanged(function()
 	end
 end)
 
--- Camlock Script Logic
-local function getClosestPlayerForCamlock()
-	local myRoot = getRootPart()
-	if not myRoot then return nil end
-	local closestPlayer = nil
-	local closestDistance = math.huge
-	
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-			local targetRoot = player.Character.HumanoidRootPart
-			local distance = (targetRoot.Position - myRoot.Position).Magnitude
-			if distance < closestDistance then
-				closestDistance = distance
-				closestPlayer = player
-			end
-		end
-	end
-	
-	return closestPlayer
-end
-
-local function camlockLoop()
-	local camera = workspace.CurrentCamera
-	if not camera then return end
-	local myRoot = getRootPart()
-	if not myRoot then return end
-	local closestPlayer = getClosestPlayerForCamlock()
-	
-	if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
-		local targetRoot = closestPlayer.Character.HumanoidRootPart
-		local targetPosition = targetRoot.Position
-		local cameraPosition = camera.CFrame.Position
-		
-		-- Look at the target while keeping the camera's current position
-		camera.CFrame = CFrame.new(cameraPosition, targetPosition)
-	end
-end
-
-Toggles.CamlockToggle:OnChanged(function()
-	disconnect("Camlock")
-	if Toggles.CamlockToggle.Value then
-		track("Camlock", RunService.Heartbeat:Connect(camlockLoop))
-		Library:Notify({ Title = "CAMLOCK", Description = "Enabled", Time = 2 })
-	else
-		Library:Notify({ Title = "CAMLOCK", Description = "Disabled", Time = 2 })
-	end
-end)
-
 Toggles.Reach:OnChanged(function()
 	if Toggles.Reach.Value then
 		Library:Notify({ Title = "Reach", Description = "Enabled", Time = 2 })
@@ -3260,11 +3205,50 @@ VisualFPS:AddToggle("LowTextures", {
 				if Toggles.LowTextures.Value then
 					if v:IsA("BasePart") or v:IsA("MeshPart") then
 						pcall(function() v.Material = Enum.Material.Plastic end)
-					end
 				end
 			end))
 		else
 			disconnect("LowTextures")
+		end
+	end,
+})
+
+VisualFPS:AddToggle("NoGrass", {
+	Text = "No Grass",
+	Default = false,
+	Callback = function(state)
+		if state then
+			coroutine.wrap(pcall)(function()
+				local terrain = workspace:FindFirstChildOfClass("Terrain")
+				if not terrain then
+					repeat
+						task.wait()
+					until workspace:FindFirstChildOfClass("Terrain")
+					terrain = workspace:FindFirstChildOfClass("Terrain")
+				end
+				if sethiddenproperty then
+					sethiddenproperty(terrain, "Decoration", false)
+				else
+					warn("Your exploit does not support sethiddenproperty, please use a different exploit.")
+				end
+				if _G.ConsoleLogs then
+					warn("Decorations Disabled")
+				end
+			end)
+		else
+			-- Try to re-enable decorations when turned off
+			coroutine.wrap(pcall)(function()
+				local terrain = workspace:FindFirstChildOfClass("Terrain")
+				if not terrain then
+					repeat
+						task.wait()
+					until workspace:FindFirstChildOfClass("Terrain")
+					terrain = workspace:FindFirstChildOfClass("Terrain")
+				end
+				if sethiddenproperty then
+					sethiddenproperty(terrain, "Decoration", true)
+				end
+			end)
 		end
 	end,
 })
@@ -4537,6 +4521,9 @@ Library:OnUnload(function()
 	if Toggles.DisableShadows and Toggles.DisableShadows.Value then
 		Toggles.DisableShadows:SetValue(false)
 	end
+	if Toggles.NoGrass and Toggles.NoGrass.Value then
+		Toggles.NoGrass:SetValue(false)
+	end
 	if Toggles.AdamantiteFarm and Toggles.AdamantiteFarm.Value then
 		Toggles.AdamantiteFarm:SetValue(false)
 	end
@@ -4575,9 +4562,6 @@ Library:OnUnload(function()
 	end
 	if Toggles.ShadowTheGoat and Toggles.ShadowTheGoat.Value then
 		Toggles.ShadowTheGoat:SetValue(false)
-	end
-	if Toggles.CamlockToggle and Toggles.CamlockToggle.Value then
-		Toggles.CamlockToggle:SetValue(false)
 	end
 	pcall(function()
 		if fovCircle then fovCircle:Remove() end
