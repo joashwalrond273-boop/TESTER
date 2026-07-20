@@ -549,7 +549,7 @@ local DesyncToggle = MainRight:AddToggle("DesyncToggle", {
 	Default = false,
 })
 if DesyncToggle.TextLabel then
-	DesyncToggle.TextLabel.TextColor3 = Color3.fromRGB(0, 120, 215)
+	DesyncToggle.TextLabel.TextColor3 = Color3.fromRGB(150, 0, 0)
 end
 
 local desyncConnections = {}
@@ -765,7 +765,7 @@ end
 
 DesyncToggle:OnChanged(function(Value)
 	if DesyncToggle.TextLabel then
-		DesyncToggle.TextLabel.TextColor3 = Value and Color3.fromRGB(0, 200, 255) or Color3.fromRGB(0, 120, 215)
+		DesyncToggle.TextLabel.TextColor3 = Value and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(150, 0, 0)
 	end
 	if Value then
 		startDesync()
@@ -1222,7 +1222,7 @@ CombatPhantomAura:AddSlider("RangeAura", {
 })
 
 CombatPhantomAura:AddToggle("AutoSwing", {
-	Text = "Auto Swing",
+	Text = "+ Auto Swing",
 	Default = false,
 })
 
@@ -2553,6 +2553,97 @@ OreFarm:AddButton({
 			else
 				Library:Notify({ Title = "Teleport", Description = "Character not found.", Time = 3 })
 			end
+		end
+	end,
+})
+
+local ironLocations = {}
+local ironNames = {}
+
+local function scanIronLocations()
+	local found = {}
+	local folder = workspace:FindFirstChild("worldResources") and workspace.worldResources:FindFirstChild("mineable")
+	if folder then
+		for _, subfolder in ipairs(folder:GetChildren()) do
+			if subfolder:IsA("Folder") then
+				for _, obj in ipairs(subfolder:GetChildren()) do
+					if obj.PrimaryPart and string.find(string.lower(obj.Name), "iron") then
+						local pos = obj.PrimaryPart.Position
+						local isDuplicate = false
+						for _, locPos in ipairs(found) do
+							if (locPos - pos).Magnitude < 5 then
+								isDuplicate = true
+								break
+							end
+						end
+						if not isDuplicate then
+							table.insert(found, pos)
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	table.sort(found, function(a, b)
+		if a.X ~= b.X then
+			return a.X < b.X
+		elseif a.Y ~= b.Y then
+			return a.Y < b.Y
+		else
+			return a.Z < b.Z
+		end
+	end)
+	
+	table.clear(ironLocations)
+	table.clear(ironNames)
+	for i, pos in ipairs(found) do
+		table.insert(ironLocations, { name = "Iron " .. i, pos = pos })
+		table.insert(ironNames, "Iron " .. i)
+	end
+	
+	if #ironLocations == 0 then
+		for i = 1, 15 do
+			table.insert(ironLocations, { name = "Iron " .. i, pos = Vector3.new(0, 0, 0) })
+			table.insert(ironNames, "Iron " .. i)
+		end
+	end
+
+	if Options.IronLocationsDropdown then
+		Options.IronLocationsDropdown:SetValues(ironNames)
+	end
+end
+
+scanIronLocations()
+
+OreFarm:AddDropdown("IronLocationsDropdown", {
+	Text = "Select Iron Location",
+	Values = ironNames,
+	Default = "Iron 1",
+})
+
+OreFarm:AddButton({
+	Text = "Teleport to Selected Iron",
+	Func = function()
+		local selected = Options.IronLocationsDropdown.Value
+		scanIronLocations()
+		local targetPos = nil
+		for _, loc in ipairs(ironLocations) do
+			if loc.name == selected then
+				targetPos = loc.pos
+				break
+			end
+		end
+		if targetPos and targetPos ~= Vector3.new(0, 0, 0) then
+			local root = getRootPart()
+			if root then
+				root.CFrame = CFrame.new(targetPos)
+				Library:Notify({ Title = "Teleport", Description = "Teleported to " .. selected, Time = 1.5 })
+			else
+				Library:Notify({ Title = "Teleport", Description = "Character not found.", Time = 3 })
+			end
+		else
+			Library:Notify({ Title = "Teleport", Description = "Iron node " .. selected .. " not found or not spawned.", Time = 3 })
 		end
 	end,
 })
@@ -3953,7 +4044,15 @@ local function onInvisibleFlyToggle(state)
 				task.wait()
 			until LocalPlayer.Character
 
+			LocalPlayer.Character.Archivable = true
 			invisibleFlyVars.playerClone = LocalPlayer.Character:Clone()
+			for _, part in ipairs(invisibleFlyVars.playerClone:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Transparency = 0.7
+				elseif part:IsA("Decal") then
+					part.Transparency = 0.7
+				end
+			end
 			invisibleFlyVars.playerClone.Parent = workspace
 			
 			-- Create and apply highlight
