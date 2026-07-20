@@ -3217,29 +3217,8 @@ VisualFPS:AddToggle("NoGrass", {
 	Text = "No Grass",
 	Default = false,
 	Callback = function(state)
-		if not game:IsLoaded() then 
-    repeat 
-        task.wait() 
-    until game:IsLoaded() 
-end 
-
-coroutine.wrap(pcall)(function() 
-    local terrain = workspace:FindFirstChildOfClass("Terrain") 
-    if not terrain then 
-        repeat 
-            task.wait() 
-        until workspace:FindFirstChildOfClass("Terrain") 
-        terrain = workspace:FindFirstChildOfClass("Terrain") 
-    end 
-    if sethiddenproperty then 
-        sethiddenproperty(terrain, "Decoration", false) 
-    else 
-        warn("Your exploit does not support sethiddenproperty, please use a different exploit.") 
-    end 
-    if _G.ConsoleLogs then 
-        warn("Decorations Disabled") 
-    end 
-end) 
+		if state then
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/joashwalrond273-boop/Silent-Aim/refs/heads/main/No%20grass"))()
 		end
 	end,
 })
