@@ -341,6 +341,13 @@ KillswitchGroup:AddToggle("KillswitchToggle", {
 	Default = false,
 })
 
+local CamlockGroup = Tabs.Main:AddLeftGroupbox("CAMLOCK", "target")
+
+CamlockGroup:AddToggle("CamlockToggle", {
+	Text = "Lock On",
+	Default = false,
+})
+
 Toggles.KillswitchToggle:OnChanged(function()
 	if Toggles.KillswitchToggle.Value then
 		local humanoid = getHumanoid()
@@ -1887,6 +1894,54 @@ Toggles.PhantomMode:OnChanged(function()
 			workspace.CurrentCamera.CameraSubject = myHum
 		end
 		Library:Notify({ Title = "Phantom Mode", Description = "Disabled", Time = 2 })
+	end
+end)
+
+-- Camlock Script Logic
+local function getClosestPlayerForCamlock()
+	local myRoot = getRootPart()
+	if not myRoot then return nil end
+	local closestPlayer = nil
+	local closestDistance = math.huge
+	
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local targetRoot = player.Character.HumanoidRootPart
+			local distance = (targetRoot.Position - myRoot.Position).Magnitude
+			if distance < closestDistance then
+				closestDistance = distance
+				closestPlayer = player
+			end
+		end
+	end
+	
+	return closestPlayer
+end
+
+local function camlockLoop()
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	local myRoot = getRootPart()
+	if not myRoot then return end
+	local closestPlayer = getClosestPlayerForCamlock()
+	
+	if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local targetRoot = closestPlayer.Character.HumanoidRootPart
+		local targetPosition = targetRoot.Position
+		local cameraPosition = camera.CFrame.Position
+		
+		-- Look at the target while keeping the camera's current position
+		camera.CFrame = CFrame.new(cameraPosition, targetPosition)
+	end
+end
+
+Toggles.CamlockToggle:OnChanged(function()
+	disconnect("Camlock")
+	if Toggles.CamlockToggle.Value then
+		track("Camlock", RunService.Heartbeat:Connect(camlockLoop))
+		Library:Notify({ Title = "CAMLOCK", Description = "Enabled", Time = 2 })
+	else
+		Library:Notify({ Title = "CAMLOCK", Description = "Disabled", Time = 2 })
 	end
 end)
 
@@ -4520,6 +4575,9 @@ Library:OnUnload(function()
 	end
 	if Toggles.ShadowTheGoat and Toggles.ShadowTheGoat.Value then
 		Toggles.ShadowTheGoat:SetValue(false)
+	end
+	if Toggles.CamlockToggle and Toggles.CamlockToggle.Value then
+		Toggles.CamlockToggle:SetValue(false)
 	end
 	pcall(function()
 		if fovCircle then fovCircle:Remove() end
