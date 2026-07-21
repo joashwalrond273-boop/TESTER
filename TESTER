@@ -2912,6 +2912,12 @@ local function attemptRespawn()
 		resetRemote:InvokeServer()
 	end
 
+	local respawnRemote = characterFolder:FindFirstChild("respawn")
+	if respawnRemote then
+		-- Pass nils for the asset ID args to keep your appearance, keep the last boolean
+		respawnRemote:InvokeServer(nil, nil, nil, nil, nil, nil, false)
+	end
+
 	respawnDebounce = false
 end
 
