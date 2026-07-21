@@ -1221,24 +1221,11 @@ CombatPhantomAura:AddSlider("RangeAura", {
 	Rounding = 1,
 })
 
-CombatPhantomAura:AddToggle("AutoSwing", {
+local CombatAutoSwing = Tabs.Combat:AddLeftGroupbox("Auto Swing", "swords")
+
+CombatAutoSwing:AddToggle("AutoSwing", {
 	Text = "+ Auto Swing",
 	Default = false,
-})
-
-local CombatAutoSpin = Tabs.Combat:AddLeftGroupbox("Auto Spin", "refresh-cw")
-
-CombatAutoSpin:AddToggle("AutoSpin", {
-	Text = "Auto Spin",
-	Default = false,
-})
-
-CombatAutoSpin:AddSlider("SpinSpeed", {
-	Text = "Spin Speed",
-	Default = 50,
-	Min = 10,
-	Max = 150,
-	Rounding = 0,
 })
 
 
@@ -1269,19 +1256,6 @@ CombatAimbot:AddSlider("AimbotFOV", {
 	Default = 100,
 	Min = 10,
 	Max = 600,
-	Rounding = 0,
-})
-
-CombatAimbot:AddToggle("TriggerBot", {
-	Text = "+ Trigger Bot",
-	Default = false,
-})
-
-CombatAimbot:AddSlider("TriggerBotRange", {
-	Text = "Trigger Range",
-	Default = 15,
-	Min = 5,
-	Max = 35,
 	Rounding = 0,
 })
 
@@ -1767,81 +1741,6 @@ Toggles.AutoSwing:OnChanged(function()
 		end))
 	else
 		_G.T = false
-	end
-end)
-
-local lastTriggerBotSwing = 0
-Toggles.TriggerBot:OnChanged(function()
-	disconnect("TriggerBot")
-	if Toggles.TriggerBot.Value then
-		track("TriggerBot", RunService.Heartbeat:Connect(function()
-			if not Toggles.TriggerBot.Value then return end
-			if tick() - lastTriggerBotSwing < 0.05 then return end
-
-			local myRoot = getRootPart()
-			if not myRoot then return end
-
-			local triggerRange = (Options.TriggerBotRange and Options.TriggerBotRange.Value) or 15
-			local myPos = myRoot.Position
-			local enemyDetected = false
-
-			-- Check Players (workspace & Players service)
-			for _, player in ipairs(Players:GetPlayers()) do
-				if player ~= LocalPlayer then
-					local pChar = player.Character or (workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(player.Name))
-					if pChar then
-						local pHum = pChar:FindFirstChildOfClass("Humanoid")
-						local pRoot = pChar:FindFirstChild("HumanoidRootPart") or pChar.PrimaryPart or pChar:FindFirstChild("Head") or pChar:FindFirstChild("Torso")
-						if pRoot and (not pHum or pHum.Health > 0) then
-							if (pRoot.Position - myPos).Magnitude <= triggerRange then
-								enemyDetected = true
-								break
-							end
-						end
-					end
-				end
-			end
-
-			-- Check Animals / Mobs if TargetAnimals toggle is enabled
-			if not enemyDetected and Toggles.TargetAnimals and Toggles.TargetAnimals.Value then
-				local aiClient = workspace:FindFirstChild("AI_Client") or workspace:FindFirstChild("animals")
-				if aiClient then
-					for _, npc in ipairs(aiClient:GetChildren()) do
-						local npcHum = npc:FindFirstChildOfClass("Humanoid")
-						local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart or npc:FindFirstChild("Head")
-						if npcRoot and (not npcHum or npcHum.Health > 0) then
-							if (npcRoot.Position - myPos).Magnitude <= triggerRange then
-								enemyDetected = true
-								break
-							end
-						end
-					end
-				end
-			end
-
-			if enemyDetected then
-				local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-				if tool then
-					tool:Activate()
-					lastTriggerBotSwing = tick()
-				end
-			end
-		end))
-		Library:Notify({ Title = "Trigger Bot", Description = "Enabled", Time = 2 })
-	end
-end)
-
-Toggles.AutoSpin:OnChanged(function()
-	disconnect("AutoSpin")
-	if Toggles.AutoSpin.Value then
-		track("AutoSpin", RunService.Heartbeat:Connect(function(dt)
-			if not isAlive() then return end
-			local root = getRootPart()
-			if root then
-				local speed = Options.SpinSpeed.Value
-				root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(speed * dt * 10), 0)
-			end
-		end))
 	end
 end)
 
@@ -4658,9 +4557,6 @@ Library:OnUnload(function()
 	end
 	if Toggles.AimbotLockOn and Toggles.AimbotLockOn.Value then
 		Toggles.AimbotLockOn:SetValue(false)
-	end
-	if Toggles.TriggerBot and Toggles.TriggerBot.Value then
-		Toggles.TriggerBot:SetValue(false)
 	end
 	if Toggles.AttachToggle and Toggles.AttachToggle.Value then
 		Toggles.AttachToggle:SetValue(false)
