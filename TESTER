@@ -2912,11 +2912,6 @@ local function attemptRespawn()
 		resetRemote:InvokeServer()
 	end
 
-	local respawnRemote = characterFolder:FindFirstChild("respawn")
-	if respawnRemote then
-		respawnRemote:InvokeServer(unpack(respawnArgs))
-	end
-
 	respawnDebounce = false
 end
 
@@ -2956,7 +2951,6 @@ local function checkAndRespawn()
 		if lastDeathPosition then
 			task.wait(0.00014)
 			attemptRespawn()
-			destroyAvatarGUI()
 			task.wait(Options.TeleportDelaySlider.Value)
 			respawnTeleport(CFrame.new(lastDeathPosition))
 		end
@@ -2977,9 +2971,7 @@ InstantRespawnGroup:AddSlider("TeleportDelaySlider", {
 })
 
 Toggles.InstantRespawn:OnChanged(function()
-	if Toggles.InstantRespawn.Value then
-		destroyAvatarGUI()
-	end
+	
 end)
 
 task.spawn(function()
