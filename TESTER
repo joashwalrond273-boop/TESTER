@@ -249,7 +249,7 @@ TSG.MineRemote = (keyedRemotes and rawget(keyedRemotes, "mine")) or (interaction
 TSG.ChopRemote = (keyedRemotes and rawget(keyedRemotes, "chop")) or (interactionsFolder and interactionsFolder:FindFirstChild("chop"))
 TSG.MeleeAI = interactionsFolder and interactionsFolder:FindFirstChild("meleeAI")
 
-Library.Font = Enum.Font.Gotham
+Library.Font = Enum.Font.Jura
 
 -- Window
 local Window = Library:CreateWindow({
@@ -1226,18 +1226,18 @@ CombatPhantomAura:AddToggle("AutoSwing", {
 	Default = false,
 })
 
-local CombatSilentAim = Tabs.Combat:AddLeftGroupbox("Silent Aim", "refresh-cw")
+local CombatAutoSpin = Tabs.Combat:AddLeftGroupbox("Auto Spin", "refresh-cw")
 
-CombatSilentAim:AddToggle("SilentAim", {
-	Text = "Silent Aim",
+CombatAutoSpin:AddToggle("AutoSpin", {
+	Text = "Auto Spin",
 	Default = false,
 })
 
-CombatSilentAim:AddSlider("SilentAimFOV", {
-	Text = "FOV Slider",
-	Default = 150,
-	Min = 30,
-	Max = 300,
+CombatAutoSpin:AddSlider("SpinSpeed", {
+	Text = "Spin Speed",
+	Default = 50,
+	Min = 10,
+	Max = 150,
 	Rounding = 0,
 })
 
@@ -1757,299 +1757,17 @@ Toggles.AutoSwing:OnChanged(function()
 	end
 end)
 
--- Silent Aim Script
-local silentAimFOVCircle = nil
-pcall(function()
-	if typeof(Drawing) ~= "nil" then
-		silentAimFOVCircle = Drawing.new("Circle")
-		silentAimFOVCircle.Thickness = 1.5
-		silentAimFOVCircle.Color = Color3.fromRGB(255, 0, 255) -- Purple
-		silentAimFOVCircle.Filled = false
-		silentAimFOVCircle.Transparency = 1
-		silentAimFOVCircle.Visible = false
-	end
-end)
-
-local function getTargetRoot(character)
-	return character:FindFirstChild("LowerTorso") 
-		or character:FindFirstChild("UpperTorso") 
-		or character:FindFirstChild("Torso") 
-		or character:FindFirstChild("HumanoidRootPart") 
-		or character.PrimaryPart
-end
-
--- Track target velocities for movement prediction
-local targetVelocities = {}
-
--- Update target velocities every heartbeat
-local function updateTargetVelocities()
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and player.Character then
-			local root = getTargetRoot(player.Character)
+Toggles.AutoSpin:OnChanged(function()
+	disconnect("AutoSpin")
+	if Toggles.AutoSpin.Value then
+		track("AutoSpin", RunService.Heartbeat:Connect(function(dt)
+			if not isAlive() then return end
+			local root = getRootPart()
 			if root then
-				local key = player.UserId
-				if not targetVelocities[key] then
-					targetVelocities[key] = { LastPosition = root.Position, Velocity = Vector3.new(0,0,0) }
-				else
-					local delta = root.Position - targetVelocities[key].LastPosition
-					targetVelocities[key].Velocity = delta / (1/60) -- Approximate delta time (assuming 60 FPS)
-					targetVelocities[key].LastPosition = root.Position
-				end
-			end
-		end
-	end
-	
-	-- Track AI too
-	local aiClient = workspace:FindFirstChild("AI_Client")
-	if aiClient then
-		for _, npc in ipairs(aiClient:GetChildren()) do
-			local root = getTargetRoot(npc)
-			if root then
-				local key = tostring(npc:GetFullName())
-				if not targetVelocities[key] then
-					targetVelocities[key] = { LastPosition = root.Position, Velocity = Vector3.new(0,0,0) }
-				else
-					local delta = root.Position - targetVelocities[key].LastPosition
-					targetVelocities[key].Velocity = delta / (1/60)
-					targetVelocities[key].LastPosition = root.Position
-				end
-			end
-		end
-	end
-end
-
-local function getSilentAimTarget()
-	local camera = workspace.CurrentCamera
-	if not camera then return nil end
-	local viewportSize = camera.ViewportSize
-	local center = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
-	local fovRadius = Options.SilentAimFOV and Options.SilentAimFOV.Value or 150
-	local closestTarget = nil
-	local shortestDistance = math.huge
-	local myRoot = getRootPart()
-	if not myRoot then return nil end
-
-	-- Check Players first if TargetPlayers is on
-	if Toggles.TargetPlayers.Value then
-		for _, player in ipairs(Players:GetPlayers()) do
-			if player ~= LocalPlayer and player.Character then
-				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-				local targetRoot = getTargetRoot(player.Character)
-				if targetRoot and humanoid and humanoid.Health > 0 then
-					-- Get target velocity for prediction
-					local targetVelocity = Vector3.new(0,0,0)
-					local key = player.UserId
-					if targetVelocities[key] then
-						targetVelocity = targetVelocities[key].Velocity
-					end
-					
-					-- Predict position (0.15 seconds ahead)
-					local predictedPosition = targetRoot.Position + targetVelocity * 0.15
-					
-					local screenPos, onScreen = camera:WorldToViewportPoint(predictedPosition)
-					if onScreen then
-						local distanceToCenter = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-						if distanceToCenter < shortestDistance and distanceToCenter <= fovRadius then
-							shortestDistance = distanceToCenter
-							closestTarget = {
-								Type = "Player",
-								Character = player.Character,
-								Player = player,
-								Root = targetRoot,
-								PredictedPosition = predictedPosition
-							}
-						end
-					end
-				end
-			end
-		end
-	end
-
-	-- Check Animals/AI if TargetAnimals is on and no player found yet
-	if Toggles.TargetAnimals.Value and not closestTarget then
-		local aiClient = workspace:FindFirstChild("AI_Client")
-		if aiClient then
-			for _, npc in ipairs(aiClient:GetChildren()) do
-				local humanoid = npc:FindFirstChildOfClass("Humanoid")
-				local targetRoot = getTargetRoot(npc)
-				if targetRoot and humanoid and humanoid.Health > 0 then
-					-- Get target velocity for prediction
-					local targetVelocity = Vector3.new(0,0,0)
-					local key = tostring(npc:GetFullName())
-					if targetVelocities[key] then
-						targetVelocity = targetVelocities[key].Velocity
-					end
-					
-					-- Predict position (0.15 seconds ahead)
-					local predictedPosition = targetRoot.Position + targetVelocity * 0.15
-					
-					local screenPos, onScreen = camera:WorldToViewportPoint(predictedPosition)
-					if onScreen then
-						local distanceToCenter = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-						if distanceToCenter < shortestDistance and distanceToCenter <= fovRadius then
-							shortestDistance = distanceToCenter
-							closestTarget = {
-								Type = "Animal",
-								Character = npc,
-								Root = targetRoot,
-								PredictedPosition = predictedPosition
-							}
-						end
-					end
-				end
-			end
-		end
-
-		local animals = resolvePath(workspace, "animals")
-		if animals then
-			for _, animal in ipairs(animals:GetChildren()) do
-				local targetRoot = getTargetRoot(animal)
-				if targetRoot then
-					-- Get target velocity for prediction
-					local targetVelocity = Vector3.new(0,0,0)
-					local key = tostring(animal:GetFullName())
-					if targetVelocities[key] then
-						targetVelocity = targetVelocities[key].Velocity
-					end
-					
-					-- Predict position (0.15 seconds ahead)
-					local predictedPosition = targetRoot.Position + targetVelocity * 0.15
-					
-					local screenPos, onScreen = camera:WorldToViewportPoint(predictedPosition)
-					if onScreen then
-						local distanceToCenter = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-						if distanceToCenter < shortestDistance and distanceToCenter <= fovRadius then
-							shortestDistance = distanceToCenter
-							closestTarget = {
-								Type = "Animal",
-								Character = animal,
-								Root = targetRoot,
-								PredictedPosition = predictedPosition
-							}
-						end
-					end
-				end
-			end
-		end
-	end
-
-	return closestTarget
-end
-
--- Track tool activations
-local silentAimToolConnections = {}
-local function setupSilentAimTools()
-	if not LocalPlayer.Character then return end
-	for _, conn in ipairs(silentAimToolConnections) do
-		if conn then conn:Disconnect() end
-	end
-	table.clear(silentAimToolConnections)
-
-	local toolAddedConn = LocalPlayer.Character.ChildAdded:Connect(function(child)
-		if child:IsA("Tool") then
-			local activatedConn = child.Activated:Connect(function()
-				if not Toggles.SilentAim.Value then return end
-				if not TSG.MeleePlayerRemote and not TSG.MeleeAnimalRemote then return end
-				if not isAlive() then return end
-
-				local slot = tonumber(Options.KillAuraSlot.Value) or 1
-				local target = getSilentAimTarget()
-				if not target then return end
-
-				updateHighlight(highlightTarget, target.Character, Toggles.HighlightTarget.Value)
-
-				if target.Type == "Player" then
-					-- Player: use Crypt encryption, fire (slot, encryptedUserId)
-					if Crypt then
-						pcall(function()
-							local k1, k2, k3 = Crypt.checkpublickeys()
-							if k1 and k2 and k3 then
-								local encryptedUserId = Crypt.crypt(k1, math.abs(target.Player.UserId) + k3, k2)
-								TSG.MeleePlayerRemote:FireServer(slot, encryptedUserId)
-							end
-						end)
-					else
-						pcall(TSG.MeleePlayerRemote.FireServer, TSG.MeleePlayerRemote, slot, target.Player)
-					end
-				else
-					attackNPC(slot, target.Character)
-				end
-			end)
-			table.insert(silentAimToolConnections, activatedConn)
-		end
-	end)
-	table.insert(silentAimToolConnections, toolAddedConn)
-
-	-- Connect to existing tools
-	for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
-		if tool:IsA("Tool") then
-			local activatedConn = tool.Activated:Connect(function()
-				if not Toggles.SilentAim.Value then return end
-				if not TSG.MeleePlayerRemote and not TSG.MeleeAnimalRemote then return end
-				if not isAlive() then return end
-
-				local slot = tonumber(Options.KillAuraSlot.Value) or 1
-				local target = getSilentAimTarget()
-				if not target then return end
-
-				updateHighlight(highlightTarget, target.Character, Toggles.HighlightTarget.Value)
-
-				if target.Type == "Player" then
-					if Crypt then
-						pcall(function()
-							local k1, k2, k3 = Crypt.checkpublickeys()
-							if k1 and k2 and k3 then
-								local encryptedUserId = Crypt.crypt(k1, math.abs(target.Player.UserId) + k3, k2)
-								TSG.MeleePlayerRemote:FireServer(slot, encryptedUserId)
-							end
-						end)
-					else
-						pcall(TSG.MeleePlayerRemote.FireServer, TSG.MeleePlayerRemote, slot, target.Player)
-					end
-				else
-					attackNPC(slot, target.Character)
-				end
-			end)
-			table.insert(silentAimToolConnections, activatedConn)
-		end
-	end
-end
-
-Toggles.SilentAim:OnChanged(function()
-	disconnect("SilentAimFOVCircleUpdate")
-	disconnect("SilentAimCharacterAdded")
-	disconnect("SilentAimVelocityUpdate")
-	if silentAimFOVCircle then silentAimFOVCircle.Visible = false end
-	for _, conn in ipairs(silentAimToolConnections) do
-		if conn then conn:Disconnect() end
-	end
-	table.clear(silentAimToolConnections)
-	table.clear(targetVelocities)
-
-	if Toggles.SilentAim.Value then
-		-- Setup FOV circle
-		track("SilentAimFOVCircleUpdate", RunService.RenderStepped:Connect(function()
-			if silentAimFOVCircle then
-				local viewportSize = workspace.CurrentCamera.ViewportSize
-				silentAimFOVCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
-				silentAimFOVCircle.Radius = Options.SilentAimFOV and Options.SilentAimFOV.Value or 150
-				silentAimFOVCircle.Visible = true
+				local speed = Options.SpinSpeed.Value
+				root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(speed * dt * 10), 0)
 			end
 		end))
-
-		-- Setup velocity update loop
-		track("SilentAimVelocityUpdate", RunService.Heartbeat:Connect(updateTargetVelocities))
-
-		-- Setup tool connections
-		setupSilentAimTools()
-
-		-- Setup character added connection to re-setup tools on respawn
-		track("SilentAimCharacterAdded", LocalPlayer.CharacterAdded:Connect(function()
-			task.wait(0.5)
-			setupSilentAimTools()
-		end))
-
-		Library:Notify({ Title = "Silent Aim", Description = "Enabled", Time = 2 })
 	end
 end)
 
@@ -3237,6 +2955,26 @@ InstantRespawnGroup:AddSlider("TeleportDelaySlider", {
 	Default = 0.1,
 	Rounding = 1,
 })
+
+InstantRespawnGroup:AddButton("Reset Character", function()
+	local root = getRootPart()
+	if root then
+		lastDeathPosition = root.Position
+	end
+	
+	local remoteInterface = ReplicatedStorage:FindFirstChild("remoteInterface")
+	if remoteInterface then
+		local characterFolder = remoteInterface:FindFirstChild("character")
+		if characterFolder then
+			local resetRemote = characterFolder:FindFirstChild("reset")
+			if resetRemote then
+				pcall(function()
+					resetRemote:InvokeServer()
+				end)
+			end
+		end
+	end
+end)
 
 Toggles.InstantRespawn:OnChanged(function()
 	if Toggles.InstantRespawn.Value then
@@ -4807,9 +4545,6 @@ Library:OnUnload(function()
 	if Toggles.AimbotLockOn and Toggles.AimbotLockOn.Value then
 		Toggles.AimbotLockOn:SetValue(false)
 	end
-	if Toggles.SilentAim and Toggles.SilentAim.Value then
-		Toggles.SilentAim:SetValue(false)
-	end
 	if Toggles.AttachToggle and Toggles.AttachToggle.Value then
 		Toggles.AttachToggle:SetValue(false)
 	end
@@ -4836,7 +4571,6 @@ Library:OnUnload(function()
 	end
 	pcall(function()
 		if fovCircle then fovCircle:Remove() end
-		if silentAimFOVCircle then silentAimFOVCircle:Remove() end
 		if cursorDrawings then
 			if cursorDrawings.square then cursorDrawings.square:Remove() end
 			if cursorDrawings.circle then cursorDrawings.circle:Remove() end
