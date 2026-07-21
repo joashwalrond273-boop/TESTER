@@ -2868,6 +2868,7 @@ local InstantRespawnGroup = Tabs.Teleport:AddRightGroupbox("Instant Respawn", "m
 
 local respawnArgs = {5917762, 5, 5, 13, 13405801, 12950139, false}
 local lastDeathPosition = nil
+local lastHumanoidDescription = nil
 local respawnDebounce = false
 local isRespawnTeleporting = false
 
@@ -2892,11 +2893,6 @@ local function attemptRespawn()
 		resetRemote:InvokeServer()
 	end
 
-	local respawnRemote = characterFolder:FindFirstChild("respawn")
-	if respawnRemote then
-		respawnRemote:InvokeServer(unpack(respawnArgs))
-	end
-
 	respawnDebounce = false
 end
 
@@ -2915,6 +2911,7 @@ local function respawnTeleport(cframe)
 	end
 
 	local humanoidRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 	local waitTime = 0
 
 	while not humanoidRootPart and waitTime < maxWaitTime do
@@ -2926,6 +2923,13 @@ local function respawnTeleport(cframe)
 	if humanoidRootPart then
 		humanoidRootPart.CFrame = cframe
 	end
+	
+	if humanoid and lastHumanoidDescription then
+		pcall(function()
+			humanoid:ApplyDescription(lastHumanoidDescription)
+		end)
+	end
+	
 	isRespawnTeleporting = false
 end
 
@@ -2962,6 +2966,16 @@ InstantRespawnGroup:AddButton("Reset Character", function()
 		lastDeathPosition = root.Position
 	end
 	
+	local character = LocalPlayer.Character
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			pcall(function()
+				lastHumanoidDescription = humanoid:GetAppliedDescription()
+			end)
+		end
+	end
+	
 	local remoteInterface = ReplicatedStorage:FindFirstChild("remoteInterface")
 	if remoteInterface then
 		local characterFolder = remoteInterface:FindFirstChild("character")
@@ -2993,6 +3007,10 @@ task.spawn(function()
 				if rootPart then
 					lastDeathPosition = rootPart.Position
 				end
+				
+				pcall(function()
+					lastHumanoidDescription = humanoid:GetAppliedDescription()
+				end)
 
 				if not humanoid:FindFirstChild("DeathTracker") then
 					local tracker = Instance.new("BoolValue")
