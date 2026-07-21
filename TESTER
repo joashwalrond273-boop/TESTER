@@ -1279,10 +1279,10 @@ CombatAimbot:AddToggle("TriggerBot", {
 
 CombatAimbot:AddSlider("TriggerBotRange", {
 	Text = "Trigger Range",
-	Default = 8,
-	Min = 3,
-	Max = 20,
-	Rounding = 1,
+	Default = 15,
+	Min = 5,
+	Max = 35,
+	Rounding = 0,
 })
 
 local CombatReach = Tabs.Combat:AddRightGroupbox("Reach", "expand")
@@ -1775,32 +1775,51 @@ Toggles.TriggerBot:OnChanged(function()
 	disconnect("TriggerBot")
 	if Toggles.TriggerBot.Value then
 		track("TriggerBot", RunService.Heartbeat:Connect(function()
-			if not isAlive() then return end
-			if tick() - lastTriggerBotSwing < 0.05 then return end -- Cooldown
-			
+			if not Toggles.TriggerBot.Value then return end
+			if tick() - lastTriggerBotSwing < 0.05 then return end
+
 			local myRoot = getRootPart()
-			local myHumanoid = getHumanoid()
-			if not myRoot or not myHumanoid then return end
-			
-			local triggerRange = Options.TriggerBotRange.Value
-			local closestEnemy = nil
-			local closestDist = triggerRange
-			
+			if not myRoot then return end
+
+			local triggerRange = (Options.TriggerBotRange and Options.TriggerBotRange.Value) or 15
+			local myPos = myRoot.Position
+			local enemyDetected = false
+
+			-- Check Players (workspace & Players service)
 			for _, player in ipairs(Players:GetPlayers()) do
-				if player ~= LocalPlayer and player.Character then
-					local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart")
-					local enemyHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
-					if enemyRoot and enemyHumanoid and enemyHumanoid.Health > 0 then
-						local dist = (enemyRoot.Position - myRoot.Position).Magnitude
-						if dist < closestDist then
-							closestDist = dist
-							closestEnemy = player.Character
+				if player ~= LocalPlayer then
+					local pChar = player.Character or (workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(player.Name))
+					if pChar then
+						local pHum = pChar:FindFirstChildOfClass("Humanoid")
+						local pRoot = pChar:FindFirstChild("HumanoidRootPart") or pChar.PrimaryPart or pChar:FindFirstChild("Head") or pChar:FindFirstChild("Torso")
+						if pRoot and (not pHum or pHum.Health > 0) then
+							if (pRoot.Position - myPos).Magnitude <= triggerRange then
+								enemyDetected = true
+								break
+							end
 						end
 					end
 				end
 			end
-			
-			if closestEnemy then
+
+			-- Check Animals / Mobs if TargetAnimals toggle is enabled
+			if not enemyDetected and Toggles.TargetAnimals and Toggles.TargetAnimals.Value then
+				local aiClient = workspace:FindFirstChild("AI_Client") or workspace:FindFirstChild("animals")
+				if aiClient then
+					for _, npc in ipairs(aiClient:GetChildren()) do
+						local npcHum = npc:FindFirstChildOfClass("Humanoid")
+						local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart or npc:FindFirstChild("Head")
+						if npcRoot and (not npcHum or npcHum.Health > 0) then
+							if (npcRoot.Position - myPos).Magnitude <= triggerRange then
+								enemyDetected = true
+								break
+							end
+						end
+					end
+				end
+			end
+
+			if enemyDetected then
 				local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
 				if tool then
 					tool:Activate()
@@ -1808,6 +1827,7 @@ Toggles.TriggerBot:OnChanged(function()
 				end
 			end
 		end))
+		Library:Notify({ Title = "Trigger Bot", Description = "Enabled", Time = 2 })
 	end
 end)
 
