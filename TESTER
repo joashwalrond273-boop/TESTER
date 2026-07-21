@@ -1228,6 +1228,11 @@ CombatAutoSwing:AddToggle("AutoSwing", {
 	Default = false,
 })
 
+CombatAutoSwing:AddToggle("SwingAura", {
+	Text = "Swing Aura",
+	Default = false,
+})
+
 
 CombatRight:AddToggle("TargetPlayers", {
 	Text = "Target Players",
@@ -1741,6 +1746,51 @@ Toggles.AutoSwing:OnChanged(function()
 		end))
 	else
 		_G.T = false
+	end
+end)
+
+local SWING_AURA_DISTANCE = 14
+
+local function isEnemyPlayerCloseForSwingAura()
+	if not isAlive() then return false end
+	local root = getRootPart()
+	if not root then return false end
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			local pChar = player.Character or (workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(player.Name))
+			if pChar then
+				local pHum = pChar:FindFirstChildOfClass("Humanoid")
+				local pRoot = pChar:FindFirstChild("HumanoidRootPart") or pChar.PrimaryPart or pChar:FindFirstChild("Head") or pChar:FindFirstChild("Torso")
+				if pRoot and (not pHum or pHum.Health > 0) then
+					local dist = (pRoot.Position - root.Position).Magnitude
+					if dist <= SWING_AURA_DISTANCE then
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
+Toggles.SwingAura:OnChanged(function()
+	disconnect("SwingAura")
+	if Toggles.SwingAura.Value then
+		track("SwingAura", RunService.Heartbeat:Connect(function()
+			if not Toggles.SwingAura.Value then return end
+			local enemyNear = isEnemyPlayerCloseForSwingAura()
+			if enemyNear and not Toggles.AutoSwing.Value then
+				Toggles.AutoSwing:SetValue(true)
+			elseif not enemyNear and Toggles.AutoSwing.Value then
+				Toggles.AutoSwing:SetValue(false)
+			end
+		end))
+		Library:Notify({ Title = "Swing Aura", Description = "Enabled (Auto Swing turns on when enemy player is near)", Time = 2 })
+	else
+		if Toggles.AutoSwing and Toggles.AutoSwing.Value then
+			Toggles.AutoSwing:SetValue(false)
+		end
 	end
 end)
 
@@ -4557,6 +4607,9 @@ Library:OnUnload(function()
 	end
 	if Toggles.AimbotLockOn and Toggles.AimbotLockOn.Value then
 		Toggles.AimbotLockOn:SetValue(false)
+	end
+	if Toggles.SwingAura and Toggles.SwingAura.Value then
+		Toggles.SwingAura:SetValue(false)
 	end
 	if Toggles.AttachToggle and Toggles.AttachToggle.Value then
 		Toggles.AttachToggle:SetValue(false)
