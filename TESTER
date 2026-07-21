@@ -2516,10 +2516,22 @@ local goldLocations = {
 	{ name = "Gold 18", pos = Vector3.new(252.14, 22.06, 811.69)    },
 }
 
+local ironLocations = {
+	{ name = "Iron 1", pos = Vector3.new(1619.09, 63.79, 187.44) },
+}
+
 local goldNames = {}
 for i, loc in ipairs(goldLocations) do
 	table.insert(goldNames, loc.name)
 end
+
+local ironNames = {}
+for i, loc in ipairs(ironLocations) do
+	table.insert(ironNames, loc.name)
+end
+
+local lastSelectedOrePos = goldLocations[1].pos
+local lastSelectedOreName = "Gold 1"
 
 OreFarm:AddDropdown("GoldLocationsDropdown", {
 	Text = "Select Gold Location",
@@ -2527,55 +2539,37 @@ OreFarm:AddDropdown("GoldLocationsDropdown", {
 	Default = "Gold 1",
 })
 
-OreFarm:AddButton({
-	Text = "Teleport to Selected Gold",
-	Func = function()
-		local selected = Options.GoldLocationsDropdown.Value
-		local targetPos = nil
-		for _, loc in ipairs(goldLocations) do
-			if loc.name == selected then
-				targetPos = loc.pos
-				break
-			end
-		end
-		if targetPos then
-			local root = getRootPart()
-			if root then
-				root.CFrame = CFrame.new(targetPos)
-				Library:Notify({ Title = "Teleport", Description = "Teleported to " .. selected, Time = 1.5 })
-			else
-				Library:Notify({ Title = "Teleport", Description = "Character not found.", Time = 3 })
-			end
-		end
-	end,
-})
-
-local ironLocations = {
-	{ name = "Iron 1", pos = Vector3.new(1619.09, 63.79, 187.44) },
-}
-
-local ironNames = {}
-for i, loc in ipairs(ironLocations) do
-	table.insert(ironNames, loc.name)
-end
-
 OreFarm:AddDropdown("IronLocationsDropdown", {
 	Text = "Select Iron Location",
 	Values = ironNames,
 	Default = "Iron 1",
 })
 
-OreFarm:AddButton({
-	Text = "Teleport to Selected Iron",
-	Func = function()
-		local selected = Options.IronLocationsDropdown.Value
-		local targetPos = nil
-		for _, loc in ipairs(ironLocations) do
-			if loc.name == selected then
-				targetPos = loc.pos
-				break
-			end
+Options.GoldLocationsDropdown:OnChanged(function(selected)
+	for _, loc in ipairs(goldLocations) do
+		if loc.name == selected then
+			lastSelectedOrePos = loc.pos
+			lastSelectedOreName = loc.name
+			break
 		end
+	end
+end)
+
+Options.IronLocationsDropdown:OnChanged(function(selected)
+	for _, loc in ipairs(ironLocations) do
+		if loc.name == selected then
+			lastSelectedOrePos = loc.pos
+			lastSelectedOreName = loc.name
+			break
+		end
+	end
+end)
+
+OreFarm:AddButton({
+	Text = "Teleport to Selected Gold",
+	Func = function()
+		local selected = lastSelectedOreName
+		local targetPos = lastSelectedOrePos
 		if targetPos then
 			local root = getRootPart()
 			if root then
