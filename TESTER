@@ -2533,6 +2533,9 @@ end
 local lastSelectedOrePos = goldLocations[1].pos
 local lastSelectedOreName = "Gold 1"
 
+local lastSelectedOrePos = ironLocations[1].pos
+local lastSelectedOreName = "Iron 1"
+
 OreFarm:AddDropdown("GoldLocationsDropdown", {
 	Text = "Select Gold Location",
 	Values = goldNames,
