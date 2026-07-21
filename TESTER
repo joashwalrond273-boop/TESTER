@@ -1277,6 +1277,14 @@ CombatAimbot:AddToggle("TriggerBot", {
 	Default = false,
 })
 
+CombatAimbot:AddSlider("TriggerBotRange", {
+	Text = "Trigger Range",
+	Default = 8,
+	Min = 3,
+	Max = 20,
+	Rounding = 1,
+})
+
 local CombatReach = Tabs.Combat:AddRightGroupbox("Reach", "expand")
 
 CombatReach:AddToggle("Reach", {
@@ -1763,62 +1771,43 @@ Toggles.AutoSwing:OnChanged(function()
 end)
 
 local lastTriggerBotSwing = 0
-local TRIGGER_BOT_DISTANCE = 14
-
-local function isEnemyCloseForTrigger()
-	if not isAlive() then return false end
-	local root = getRootPart()
-	if not root then return false end
-
-	if not Toggles.TargetPlayers or Toggles.TargetPlayers.Value then
-		for _, player in ipairs(Players:GetPlayers()) do
-			if player ~= LocalPlayer and player.Character then
-				local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart") or player.Character.PrimaryPart
-				local enemyHum = player.Character:FindFirstChildOfClass("Humanoid")
-				if enemyRoot and enemyHum and enemyHum.Health > 0 then
-					local dist = (enemyRoot.Position - root.Position).Magnitude
-					if dist <= TRIGGER_BOT_DISTANCE then
-						return true
-					end
-				end
-			end
-		end
-	end
-
-	if Toggles.TargetAnimals and Toggles.TargetAnimals.Value then
-		local aiClient = workspace:FindFirstChild("AI_Client")
-		if aiClient then
-			for _, npc in ipairs(aiClient:GetChildren()) do
-				local npcHum = npc:FindFirstChildOfClass("Humanoid")
-				local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
-				if npcHum and npcHum.Health > 0 and npcRoot then
-					local dist = (npcRoot.Position - root.Position).Magnitude
-					if dist <= TRIGGER_BOT_DISTANCE then
-						return true
-					end
-				end
-			end
-		end
-	end
-
-	return false
-end
-
 Toggles.TriggerBot:OnChanged(function()
 	disconnect("TriggerBot")
 	if Toggles.TriggerBot.Value then
 		track("TriggerBot", RunService.Heartbeat:Connect(function()
-			if Toggles.TriggerBot.Value and tick() - lastTriggerBotSwing >= 0.05 then
-				if isEnemyCloseForTrigger() then
-					local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-					if tool then
-						tool:Activate()
-						lastTriggerBotSwing = tick()
+			if not isAlive() then return end
+			if tick() - lastTriggerBotSwing < 0.05 then return end -- Cooldown
+			
+			local myRoot = getRootPart()
+			local myHumanoid = getHumanoid()
+			if not myRoot or not myHumanoid then return end
+			
+			local triggerRange = Options.TriggerBotRange.Value
+			local closestEnemy = nil
+			local closestDist = triggerRange
+			
+			for _, player in ipairs(Players:GetPlayers()) do
+				if player ~= LocalPlayer and player.Character then
+					local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart")
+					local enemyHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
+					if enemyRoot and enemyHumanoid and enemyHumanoid.Health > 0 then
+						local dist = (enemyRoot.Position - myRoot.Position).Magnitude
+						if dist < closestDist then
+							closestDist = dist
+							closestEnemy = player.Character
+						end
 					end
 				end
 			end
+			
+			if closestEnemy then
+				local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+				if tool then
+					tool:Activate()
+					lastTriggerBotSwing = tick()
+				end
+			end
 		end))
-		Library:Notify({ Title = "Trigger Bot", Description = "Enabled (Auto Swing on close enemies)", Time = 2 })
 	end
 end)
 
