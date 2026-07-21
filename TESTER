@@ -2502,6 +2502,26 @@ FarmAI:AddToggle("HighlightAI", {
 -- ==========================================
 local OreFarm = Tabs.Farming:AddRightGroupbox("Ore Farm", "gem")
 
+OreFarm:AddButton("Reset Character", function()
+	local root = getRootPart()
+	if root then
+		lastDeathPosition = root.Position
+	end
+	
+	local remoteInterface = ReplicatedStorage:FindFirstChild("remoteInterface")
+	if remoteInterface then
+		local characterFolder = remoteInterface:FindFirstChild("character")
+		if characterFolder then
+			local resetRemote = characterFolder:FindFirstChild("reset")
+			if resetRemote then
+				pcall(function()
+					resetRemote:InvokeServer()
+				end)
+			end
+		end
+	end
+end)
+
 local goldLocations = {
 	{ name = "Gold 1",  pos = Vector3.new(1732.94, 113.13, 2295.19) },
 	{ name = "Gold 2",  pos = Vector3.new(1447.98, 39.83,  2400.27) },
@@ -2868,7 +2888,6 @@ local InstantRespawnGroup = Tabs.Teleport:AddRightGroupbox("Instant Respawn", "m
 
 local respawnArgs = {5917762, 5, 5, 13, 13405801, 12950139, false}
 local lastDeathPosition = nil
-local lastHumanoidDescription = nil
 local respawnDebounce = false
 local isRespawnTeleporting = false
 
@@ -2893,6 +2912,11 @@ local function attemptRespawn()
 		resetRemote:InvokeServer()
 	end
 
+	local respawnRemote = characterFolder:FindFirstChild("respawn")
+	if respawnRemote then
+		respawnRemote:InvokeServer(unpack(respawnArgs))
+	end
+
 	respawnDebounce = false
 end
 
@@ -2911,7 +2935,6 @@ local function respawnTeleport(cframe)
 	end
 
 	local humanoidRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-	local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 	local waitTime = 0
 
 	while not humanoidRootPart and waitTime < maxWaitTime do
@@ -2923,13 +2946,6 @@ local function respawnTeleport(cframe)
 	if humanoidRootPart then
 		humanoidRootPart.CFrame = cframe
 	end
-	
-	if humanoid and lastHumanoidDescription then
-		pcall(function()
-			humanoid:ApplyDescription(lastHumanoidDescription)
-		end)
-	end
-	
 	isRespawnTeleporting = false
 end
 
@@ -2960,36 +2976,6 @@ InstantRespawnGroup:AddSlider("TeleportDelaySlider", {
 	Rounding = 1,
 })
 
-InstantRespawnGroup:AddButton("Reset Character", function()
-	local root = getRootPart()
-	if root then
-		lastDeathPosition = root.Position
-	end
-	
-	local character = LocalPlayer.Character
-	if character then
-		local humanoid = character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			pcall(function()
-				lastHumanoidDescription = humanoid:GetAppliedDescription()
-			end)
-		end
-	end
-	
-	local remoteInterface = ReplicatedStorage:FindFirstChild("remoteInterface")
-	if remoteInterface then
-		local characterFolder = remoteInterface:FindFirstChild("character")
-		if characterFolder then
-			local resetRemote = characterFolder:FindFirstChild("reset")
-			if resetRemote then
-				pcall(function()
-					resetRemote:InvokeServer()
-				end)
-			end
-		end
-	end
-end)
-
 Toggles.InstantRespawn:OnChanged(function()
 	if Toggles.InstantRespawn.Value then
 		destroyAvatarGUI()
@@ -3007,10 +2993,6 @@ task.spawn(function()
 				if rootPart then
 					lastDeathPosition = rootPart.Position
 				end
-				
-				pcall(function()
-					lastHumanoidDescription = humanoid:GetAppliedDescription()
-				end)
 
 				if not humanoid:FindFirstChild("DeathTracker") then
 					local tracker = Instance.new("BoolValue")
